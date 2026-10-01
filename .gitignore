@@ -49,7 +49,6 @@ spongilla_remapping/slurm*
 spongilla_remapping/.log/*
 spongilla_remapping/precompiled_softwares/peaks2utr/*
 spongilla_remapping/02c_cellranger_count/*
-spongilla_remapping/00_input/slac_genome*
 sycon_cluster_analyses/05_SAMap_porifera/*
 sycon_cluster_analyses/05*tar.gz
 sycon_cluster_analyses/01_proteomes
@@ -74,3 +73,8 @@ sycon_cluster_analyses/orthogroup_analysis.tsv
 sycon_cluster_analyses/pinacocytes_markers.dmnd
 sycon_cluster_analyses/00_input/pinacocytes_markers.faa
 sycon_cluster_analyses/00_input/sycon_capricorn_markers.fna
+*correspondence_clusters_s*
+sycon_cluster_analyses/20_cluster_composition/*
+sycon_cluster_analyses/00_input/Scil.h5ad
+sycon_cluster_analyses/00_input/in_paralogs.tsv
+spongilla_remapping/00_input/slac_genome_BACKUP/*
