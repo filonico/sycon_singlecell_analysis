@@ -17,8 +17,8 @@ input_directory <- getwd()
 
 # pre-processed porifera data
 scil_data <- "00_input/Sycon_Seuratv4.Rdata"
-aque_data <- "04_preprocessed_scRNAseqs/Aque_cellFiltered.h5ad"
-slac_data <- "04_preprocessed_scRNAseqs/Slac_cellFiltered.h5ad"
+# aque_data <- "04_preprocessed_scRNAseqs/Aque_cellFiltered.h5ad"
+# slac_data <- "04_preprocessed_scRNAseqs/Slac_cellFiltered.h5ad"
 
 # files with cell-cycle markers annotation
 cellcycle_markers <- list.files(path = "00_input/cell_cycle_markers", pattern = "withNCBI.csv", full.names = TRUE)
@@ -28,8 +28,8 @@ cellcycle_orthogroupsPerReference_file <- "16_cellcycle_scoring/03_orthofinder/c
 
 # cellcycle markers per porifera orthogroup
 cellcycle_orthogroupsPerSycon_file <- "16_cellcycle_scoring/03_orthofinder/cellcycle_orthogroupsPerSycon.tsv"
-cellcycle_orthogroupsPeraque_file <- "16_cellcycle_scoring/03_orthofinder/cellcycle_orthogroupsPerAmphimedon.tsv"
-cellcycle_orthogroupsPerslac_file <- "16_cellcycle_scoring/03_orthofinder/cellcycle_orthogroupsPerSpongilla.tsv"
+# cellcycle_orthogroupsPeraque_file <- "16_cellcycle_scoring/03_orthofinder/cellcycle_orthogroupsPerAmphimedon.tsv"
+# cellcycle_orthogroupsPerslac_file <- "16_cellcycle_scoring/03_orthofinder/cellcycle_orthogroupsPerSpongilla.tsv"
 
 
 ###################
@@ -121,10 +121,10 @@ cellcycle_orthogroupsPerReference <- import_cellCycle_annotation_tables(cellcycl
 # load orthogroup annotations for slace species
 cellcycle_orthogroupsPerSycon <- import_cellCycle_annotation_tables(cellcycle_orthogroupsPerSycon_file,
                                                                     c("OGs", "geneID"))
-cellcycle_orthogroupsPerslac <- import_cellCycle_annotation_tables(cellcycle_orthogroupsPerslac_file,
-                                                                    c("OGs", "geneID"))
-cellcycle_orthogroupsPeraque <- import_cellCycle_annotation_tables(cellcycle_orthogroupsPeraque_file,
-                                                                    c("OGs", "geneID"))
+# cellcycle_orthogroupsPerslac <- import_cellCycle_annotation_tables(cellcycle_orthogroupsPerslac_file,
+#                                                                     c("OGs", "geneID"))
+# cellcycle_orthogroupsPeraque <- import_cellCycle_annotation_tables(cellcycle_orthogroupsPeraque_file,
+#                                                                     c("OGs", "geneID"))
 
 # create a tibble out of cell-cycle markers of reference species
 reference_cellCycle_markers <- do.call(rbind, lapply(cellcycle_markers, read.csv))
@@ -132,25 +132,25 @@ reference_cellCycle_markers <- do.call(rbind, lapply(cellcycle_markers, read.csv
 # annotate scil cell-cycle marker genes
 cellcycle_scil <- annotate_slace_cellCycle_markers(cellcycle_orthogroupsPerReference,
                                                      cellcycle_orthogroupsPerSycon)
-cellcycle_aque <- annotate_slace_cellCycle_markers(cellcycle_orthogroupsPerReference,
-                                                     cellcycle_orthogroupsPeraque)
-cellcycle_slac <- annotate_slace_cellCycle_markers(cellcycle_orthogroupsPerReference,
-                                                     cellcycle_orthogroupsPerslac)
+# cellcycle_aque <- annotate_slace_cellCycle_markers(cellcycle_orthogroupsPerReference,
+#                                                      cellcycle_orthogroupsPeraque)
+# cellcycle_slac <- annotate_slace_cellCycle_markers(cellcycle_orthogroupsPerReference,
+#                                                      cellcycle_orthogroupsPerslac)
 
 # write annotation to files
 write_annotation_to_file(cellcycle_scil, "16_cellcycle_scoring/03_orthofinder/cellcycle_markers_scil.tsv")
-write_annotation_to_file(cellcycle_aque, "16_cellcycle_scoring/03_orthofinder/cellcycle_markers_aquemedon.tsv")
-write_annotation_to_file(cellcycle_slac, "16_cellcycle_scoring/03_orthofinder/cellcycle_markers_slacilla.tsv")
+# write_annotation_to_file(cellcycle_aque, "16_cellcycle_scoring/03_orthofinder/cellcycle_markers_aquemedon.tsv")
+# write_annotation_to_file(cellcycle_slac, "16_cellcycle_scoring/03_orthofinder/cellcycle_markers_slacilla.tsv")
 
 # extract S phase markers
 s_genes_scil <- extract_phase_markers(cellcycle_scil, "S")
-s_genes_aque <- extract_phase_markers(cellcycle_aque, "S")
-s_genes_slac <- extract_phase_markers(cellcycle_slac, "S")
+# s_genes_aque <- extract_phase_markers(cellcycle_aque, "S")
+# s_genes_slac <- extract_phase_markers(cellcycle_slac, "S")
 
 # extract G2/M phase markers
 g2m_genes_scil <- extract_phase_markers(cellcycle_scil, "G2/M")
-g2m_genes_aque <- extract_phase_markers(cellcycle_aque, "G2/M")
-g2m_genes_slac <- extract_phase_markers(cellcycle_slac, "G2/M")
+# g2m_genes_aque <- extract_phase_markers(cellcycle_aque, "G2/M")
+# g2m_genes_slac <- extract_phase_markers(cellcycle_slac, "G2/M")
 
 
 ###################################
@@ -160,46 +160,46 @@ g2m_genes_slac <- extract_phase_markers(cellcycle_slac, "G2/M")
 # load single cell data
 load(scil_data)
 
-aque <- sceasy::convertFormat(aque_data, from = "anndata", to = "seurat") %>%
-  NormalizeData() %>%
-  FindVariableFeatures(selection.method = "vst") %>%
-  ScaleData(features = rownames(.))
-
-slac <- sceasy::convertFormat(slac_data, from = "anndata", to = "seurat") %>%
-  NormalizeData() %>%
-  FindVariableFeatures(selection.method = "vst") %>%
-  ScaleData(features = rownames(.))
+# aque <- sceasy::convertFormat(aque_data, from = "anndata", to = "seurat") %>%
+#   NormalizeData() %>%
+#   FindVariableFeatures(selection.method = "vst") %>%
+#   ScaleData(features = rownames(.))
+# 
+# slac <- sceasy::convertFormat(slac_data, from = "anndata", to = "seurat") %>%
+#   NormalizeData() %>%
+#   FindVariableFeatures(selection.method = "vst") %>%
+#   ScaleData(features = rownames(.))
 
 # score cells based on cycle phases
 Sycon <- score_cellcycle(Sycon, s_genes_scil, g2m_genes_scil)
-aque <- score_cellcycle(aque, s_genes_aque, g2m_genes_aque)
-slac <- score_cellcycle(slac, s_genes_slac, g2m_genes_slac)
+# aque <- score_cellcycle(aque, s_genes_aque, g2m_genes_aque)
+# slac <- score_cellcycle(slac, s_genes_slac, g2m_genes_slac)
 
 # plot PCs scored by cell-cycle phases before regression
 PCAplot_before_cellCycle_scaling_scil <- plot_PCA(Sycon, "Cell cycle scoring before regression")
-PCAplot_before_cellCycle_scaling_aque <- plot_PCA(aque, "Cell cycle scoring before regression (aquemedon)")
-PCAplot_before_cellCycle_scaling_slac <- plot_PCA(slac, "Cell cycle scoring before regression (slacilla)")
+# PCAplot_before_cellCycle_scaling_aque <- plot_PCA(aque, "Cell cycle scoring before regression (aquemedon)")
+# PCAplot_before_cellCycle_scaling_slac <- plot_PCA(slac, "Cell cycle scoring before regression (slacilla)")
 
-# plot umap before regression
-UMAPplot_before_cellCycle_scaling <- DimPlot(Sycon, reduction = "umap") +
-  # ggtitle("Cell cycle scoring before regression on UMAP") +
-  labs(colour="Cell cycle phases") +
-  theme_classic()
-
-UMAPplot_before_cellCycle_scaling
+# # plot umap before regression
+# UMAPplot_before_cellCycle_scaling <- DimPlot(Sycon, reduction = "umap") +
+#   # ggtitle("Cell cycle scoring before regression on UMAP") +
+#   labs(colour="Cell cycle phases") +
+#   theme_classic()
+# 
+# UMAPplot_before_cellCycle_scaling
 
 # regress out cell cycle phases
 Sycon <- Sycon %>%
   ScaleData(vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(.)) %>%
   RunPCA(features = c(s_genes_scil, g2m_genes_scil))
 
-aque <- aque %>%
-  ScaleData(vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(.)) %>%
-  RunPCA(features = c(s_genes_aque, g2m_genes_aque))
-
-slac <- slac %>%
-  ScaleData(vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(.)) %>%
-  RunPCA(features = c(s_genes_slac, g2m_genes_slac))
+# aque <- aque %>%
+#   ScaleData(vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(.)) %>%
+#   RunPCA(features = c(s_genes_aque, g2m_genes_aque))
+# 
+# slac <- slac %>%
+#   ScaleData(vars.to.regress = c("S.Score", "G2M.Score"), features = rownames(.)) %>%
+#   RunPCA(features = c(s_genes_slac, g2m_genes_slac))
 
 # run PCA again
 Sycon <- Sycon %>%
@@ -207,28 +207,28 @@ Sycon <- Sycon %>%
 
 # plot PCs scored by cell-cycle phases after regression
 PCAplot_after_cellCycle_scaling_scil <- plot_PCA(Sycon, "Cell cycle scoring\nafter regression")
-PCAplot_after_cellCycle_scaling_aque <- plot_PCA(aque, "Cell cycle scoring after regression (aquemedon)")
-PCAplot_after_cellCycle_scaling_slac <- plot_PCA(slac, "Cell cycle scoring after regression (slacilla)")
+# PCAplot_after_cellCycle_scaling_aque <- plot_PCA(aque, "Cell cycle scoring after regression (aquemedon)")
+# PCAplot_after_cellCycle_scaling_slac <- plot_PCA(slac, "Cell cycle scoring after regression (slacilla)")
 
-# plot umap after regression
-UMAPplot_after_cellCycle_scaling <- DimPlot2(Sycon, reduction = "umap") +
-  # ggtitle("Cell cycle scoring before regression on UMAP") +
-  labs(colour="Cell cycle phases") +
-  theme_classic()
-
-UMAPplot_after_cellCycle_scaling
+# # plot umap after regression
+# UMAPplot_after_cellCycle_scaling <- DimPlot2(Sycon, reduction = "umap") +
+#   # ggtitle("Cell cycle scoring before regression on UMAP") +
+#   labs(colour="Cell cycle phases") +
+#   theme_classic()
+# 
+# UMAPplot_after_cellCycle_scaling
 
 # plot panel
 panel_scil <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_scil + ggtitle("Cell cycle scoring\nbefore regression"),
                                 PCAplot_after_cellCycle_scaling_scil,
-                                UMAPplot_before_cellCycle_scaling,
-                                UMAPplot_after_cellCycle_scaling,
+                                # UMAPplot_before_cellCycle_scaling,
+                                # UMAPplot_after_cellCycle_scaling,
                                 common.legend = TRUE, legend = "right", labels = "AUTO")
 panel_scil
-panel_aque <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_aque, PCAplot_after_cellCycle_scaling_aque,
-                                ncol = 2, align = "hv", common.legend = TRUE, legend = "right", labels = "AUTO")
-panel_slac <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_slac, PCAplot_after_cellCycle_scaling_slac,
-                                ncol = 2, align = "hv", common.legend = TRUE, legend = "right", labels = "AUTO")
+# panel_aque <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_aque, PCAplot_after_cellCycle_scaling_aque,
+#                                 ncol = 2, align = "hv", common.legend = TRUE, legend = "right", labels = "AUTO")
+# panel_slac <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_slac, PCAplot_after_cellCycle_scaling_slac,
+#                                 ncol = 2, align = "hv", common.legend = TRUE, legend = "right", labels = "AUTO")
 
 
 
@@ -238,10 +238,10 @@ panel_slac <- ggpubr::ggarrange(PCAplot_before_cellCycle_scaling_slac, PCAplot_a
 
 ggsave(paste0(PCA_cellcycle_scoring_file_scil, ".pdf"),
        plot = panel_scil, device = "pdf",
-       dpi = 300, height = 7, width = 9, units = ("in"), bg = 'white')
+       dpi = 300, height = 4, width = 9, units = ("in"), bg = 'white')
 ggsave(paste0(PCA_cellcycle_scoring_file_scil, ".png"),
        plot = panel_scil, device = "png",
-       dpi = 300, height = 7, width = 9, units = ("in"), bg = 'white')
+       dpi = 300, height = 4, width = 9, units = ("in"), bg = 'white')
 
 ggsave(PCA_cellcycle_scoring_file_aque,
        plot = panel_aque, device = "pdf",

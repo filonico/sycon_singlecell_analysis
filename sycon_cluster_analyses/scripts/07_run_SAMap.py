@@ -2,23 +2,11 @@
 
 import subprocess
 
-subprocess.run("source ~/miniforge3/bin/activate SAMap_env", shell = True)
-
-from samap.mapping import SAMAP
-from samalg import SAM
+from samap import sam, SAMAP
+from samap.utils import save_samap
 import pandas as pd
 import sys, os, pickle, argparse
 from argparse import RawTextHelpFormatter
-
-
-##################
-#     INPUTS     #
-##################
-
-mapping_dir = './03_pairwise_diamond/'
-
-# load the table with species metadata
-species_metadata = pd.read_table("00_input/species_metadata.tsv")
 
 
 #####################
@@ -27,22 +15,24 @@ species_metadata = pd.read_table("00_input/species_metadata.tsv")
 
 # check if input species IDs are valid or not (based on species_metadata file)
 def validate_species(species_list):
+    allowed_species = ["Mlei", "Ppil", "Aque", "Scil", "Slac", "Hvul", "Nvec", "Spis", "Xesp"]
     species = sorted([s.strip() for s in species_list.split(",")])
-    if not set(species).issubset(species_metadata["speciesID"]):
-        invalid_species = set(species).difference(species_metadata["speciesID"])
+    if not set(species).issubset(allowed_species):
+        invalid_species = set(species).difference(allowed_species)
         raise argparse.ArgumentTypeError(f"Invalid species ID(s): {', '.join(invalid_species)}")
     if len(species) <= 1:
         raise argparse.ArgumentTypeError("You must select at least two species.")
     return species
 
-# create samap object with pre-computed cell clusters
-def create_samap_with_precomputed_clusters(input):
-    # create samap object
-    samap_object = SAMAP(input,
-                        f_maps = mapping_dir,
-                        keys = cellCluster_dict,
-                        save_processed = False)
-    return(samap_object)
+# check if number of iterations is >0
+def positive_int(value):
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not a valid integer.")
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"Number of SAMap iterations must be greater than 0, got {ivalue}.")
+    return ivalue
 
 # create samap object with samap-computed cell clusters
 def create_samap_with_leiden_clustering(input):
@@ -50,21 +40,10 @@ def create_samap_with_leiden_clustering(input):
     resolution_dict = {key: 3 for key in species_to_process}
     # create samap object
     samap_object = SAMAP(input,
-                         f_maps = mapping_dir,
+                         f_maps = input_diamond_dir,
                          resolutions = resolution_dict,
                          save_processed = False)
     return(samap_object)
-
-# update .obs in the anndata object with full species names
-def update_sam_mapping_obs(samap_object):
-    samap_object.samap.adata.obs = samap_object.samap.adata.obs.merge(species_metadata[["speciesID", "species_full"]],
-                                                                      left_on = "species",
-                                                                      right_on = "speciesID",
-                                                                      how = "inner").drop(columns = "speciesID")
-    
-def save_processed_sam_objects(samap_objects, file_annotation):
-    for spID in samap_objects.sams:
-        samap_objects.sams[spID].save_anndata(os.path.join(input_dir, spID + '_cellFiltered_' + file_annotation + '.h5ad'))
 
 
 #####################
@@ -74,24 +53,27 @@ def save_processed_sam_objects(samap_objects, file_annotation):
 parser = argparse.ArgumentParser(description = "Run SAMap on pre-filtered single-cell h5ad files.")
     
 parser.add_argument("-s", "--species",
-                    type = validate_species, required = True,
-                    help = "Comma-separated list of species IDs (e.g., species1,species2,species3)")
+                    type = validate_species, default = "Aque,Scil,Slac,Hvul,Nvec,Spis,Xesp",
+                    help = "Comma-separated list of species IDs (e.g., species1,species2,species3). [default: \"Aque,Scil,Slac,Hvul,Nvec,Spis,Xesp\"]")
 
 parser.add_argument("-a", "--analysis",
                     choices = ["pairwise", "stitched", "both"], default = "both",
                     help = "Type of analysis. Choose among \"pairwise\", \"stitched\", and \"both\". [default: both]")
 
-parser.add_argument("-d", "--data",
-                    choices = ["raw", "preprocessed"], default = "raw",
-                    help = "Type of data to load. Choose between \"raw\" (for raw counts) and \"preprocessed\" (for preprocessed SAM files). Must be in h5ad files. [default: raw]")
-
-parser.add_argument("-c", "--clustering",
-                    choices = ["precomputed", "leiden"], default = "leiden",
-                    help = "Clustering method. Choose between \"precomputed\" (if you already know the clusters) and \"leiden\" (to allow SAMap do the leiden clustering). [default : leiden]")
-
-parser.add_argument("-i", "--input_dir",
+parser.add_argument("-i", "--input_h5ad_dir",
                     default = "./04_preprocessed_scRNAseqs/",
-                    help = "Input directory where h5ad files are stored. [default : ./04_preprocessed_scRNAseqs/]")
+                    help = "Input directory where h5ad files are stored. [default: ./04_preprocessed_scRNAseqs/]")
+
+parser.add_argument("-d", "--input_pairwise_diamond_dir",
+                    default = "./03_pairwise_diamond/",
+                    help = "Input directory where pairwise diamond outputs are stored. [default: ./03_pairwise_diamond/]")
+
+parser.add_argument("-n", "--number_of_SAMap_iterarions",
+                    type = positive_int, default = 6,
+                    help = "Number of SAMap iterations to perform. [default: 6]")
+
+parser.add_argument("-l", "--cluster_stitched_manifold", action = "store_true",
+                    help = "Perform Leiden clustering with default parameters on the stitched manifold.")
 
 parser.add_argument("-o", "--output_dir", required = True,
                     help = "Output directory.")
@@ -107,22 +89,18 @@ type_of_analysis_dict = {
     "stitched": "SAMap stitched species",
     "both": "SAMap pairwise + stitched"
 }
-input_data_type_dict = {
-    "raw": "raw counts matrices",
-    "preprocessed": "pre-processed SAM matrices"
-}
-clustering_method_dict = {
-    "precomputed": "pre-computed cell clusters",
-    "leiden": "SAMap clusters with resolution 3"
-}
 
 
 ##########################
 #     ANALYSIS RECAP     #
 ##########################
 
-input_dir = args.input_dir
+input_h5ad_dir = args.input_h5ad_dir
+input_diamond_dir = args.input_pairwise_diamond_dir
 output_dir = args.output_dir
+species_to_process = args.species
+number_of_SAMap_iterarions = args.number_of_SAMap_iterarions
+output_suffix = 'leiden3Clusters'
 
 # create output dir if does not exist
 if not os.path.isdir(output_dir):
@@ -131,71 +109,54 @@ if not os.path.isdir(output_dir):
 
 print("\n#####   ANALYSIS RECAP   #####")
 print(f"Species to process: {', '.join(args.species)}")
-print(f"File to load: {input_data_type_dict[args.data]}")
+print(f"Input h5ad directory: {input_h5ad_dir}")
+print(f"Input diamond directory: {input_diamond_dir}")
 print(f"Type of analysis: {type_of_analysis_dict[args.analysis]}")
-print(f"Cell-clustering method: {clustering_method_dict[args.clustering]}")
-print(f"Input directory: {input_dir}")
+print(f"Number of SAMap iterarions: {number_of_SAMap_iterarions}")
 print(f"Output directory: {output_dir}")
 print("##############################\n")
 
 sys.stdout.flush()
-
-###############################
-#     SET UP THE ANALYSIS     #
-###############################
-
-species_to_process = args.species
-
-if args.clustering == "precomputed":
-    output_suffix = 'preComputedClusters'
-elif args.clustering == "leiden":
-    output_suffix = 'leiden3Clusters'
-
-# sys.exit("\nNothing more to do for now :-) we are tetsing the code. Exiting...\n")
-
-# subset the dataset to only species that needs to be analysed
-species_metadata = species_metadata[species_metadata["speciesID"].isin(species_to_process)]
 
 
 ########################
 #     IMPORT FILES     #
 ########################
 
-# define the dictionary  where spIDs and path to h5ad files will be stored
+# define the dictionary where spIDs and path to h5ad files will be stored
 data = {}
 
 # populate the dictionary
-for filepath, dirnames, filenames in os.walk(input_dir):
+for filepath, dirnames, filenames in os.walk(input_h5ad_dir):
+
     for filename in filenames:
+
         # load only files of chosen species
-        if any(species in filename for species in species_to_process):
-            # if raw data have been chosen, then load them
-            if args.data == "raw" and "Clusters" not in filename:
-                print("Loading raw data...")
-                # extract the species ID
-                spID = filename[0:4]
-                # get the path to the file
-                h5ad_file = os.path.join(filepath, filename)
-                # add the dict entry
+        if any(species in filename for species in species_to_process) and filename.endswith(".h5ad"):
+            print("Loading raw data...")
+            # extract the species ID
+            spID = filename[0:4]
+            # get the path to the file
+            h5ad_file = os.path.join(filepath, filename)
+            # perform harmony batch correction on Ppil
+            
+            if spID == "Scil":
+                print("Preprocessing Scil with SAM (batch correction with harmonypy)...")
+                sam_ppil = sam.SAM()
+                sam_ppil.load_data(h5ad_file)
+                sam_ppil.run(batch_key = "orig.ident")
+                data[spID] = sam_ppil
+            else:
                 data[spID] = h5ad_file
-            # if preprocessed SAM data have been chosen, then load them
-            elif args.data == "precomputed" and "Clusters" in filename:
-                print("Loading pre-processed data...")
-                # extract the species ID
-                spID = filename[0:4]
-                # create an empty SAM object
-                preprocessed_file = SAM()
-                # load the preprocessed file as a SAM object
-                preprocessed_file.load_data(os.path.join(filepath, filename.split('_')[0] + '_cellFiltered_' + output_suffix + '.h5ad'))
-                # add the dict entry
-                data[spID] = preprocessed_file
+            
+            #data[spID] = h5ad_file
+            
 
 print("\n")
 
 print(data)
 
-# create a dictionary for the name of cell cluster annotations
-cellCluster_dict = species_metadata.set_index("speciesID")["cellCluster_annotation_name"].to_dict()
+# sys.exit("\nNothing more to do for now :-) we are tetsing the code. Exiting...\n")
 
 sys.stdout.flush()
 
@@ -204,40 +165,27 @@ sys.stdout.flush()
 ###################################
 
 # create a dictionary with True booleans to be used in the neigh_from_keys SAMap algorithm
-speciesTrue_dict = {key: True for key in species_metadata["speciesID"]}
+speciesTrue_dict = {key: True for key in species_to_process}
 
 # STITCHED SPECIES ANALYSIS
 if args.analysis == "stitched" or args.analysis == "both":
 
-    # PRE-COMPUTED CELL CLUSTERS
-    if args.clustering == "precomputed":
-        # use the pre-computed cell clusters
-        sam_mapping = create_samap_with_precomputed_clusters(data)
-        save_processed_sam_objects(sam_mapping, output_suffix)
-        # run the SAMAP algorithm
-        sam_mapping.run(pairwise = True, neigh_from_keys = speciesTrue_dict,
-                        NUMITERS = 6)
-
     # SAMAP CELL CLUSTERING
-    elif args.clustering == "leiden":
-        # use the SAMap clustering method, assuming a resolution parameter of three for all species
-        sam_mapping = create_samap_with_leiden_clustering(data)
-        save_processed_sam_objects(sam_mapping, output_suffix)
-        # run the SAMAP algorithm
-        sam_mapping.run(pairwise = True,
-                        neigh_from_keys = speciesTrue_dict,
-                        NUMITERS = 6)
-
-    # update .obs in the anndata object with full species names
-    update_sam_mapping_obs(sam_mapping)
+    # use the SAMap clustering method, assuming a resolution parameter of three for all species
+    sam_mapping = create_samap_with_leiden_clustering(data)
+    # run the SAMAP algorithm
+    sam_mapping.run(pairwise = True,
+                    neigh_from_keys = speciesTrue_dict,
+                    n_iterations = number_of_SAMap_iterarions)
 
     sys.stdout.flush()
 
-    # save the computed SAMAP object
-    with open(os.path.join(output_dir, "".join(species_to_process) + "_" + output_suffix + "_samap.pkl"), "wb") as file:
-        pickle.dump(sam_mapping, file)
+    if args.cluster_stitched_manifold:
+        sam_mapping.samap.leiden_clustering(res = 4)
 
-    sam_mapping.samap.save_anndata(os.path.join(output_dir, "".join(species_to_process) + "_" + output_suffix + "_samap.h5ad"), "wb")
+    # save the computed SAMAP object
+    save_samap(sam_mapping, os.path.join(output_dir, "".join(species_to_process) + "_" + output_suffix + "_samap.pkl"))
+    sam_mapping.samap.save_anndata(os.path.join(output_dir, "".join(species_to_process) + "_" + output_suffix + "_samap.h5ad"))
 
 # TRUE PAIRWISE ANALYSIS
 if args.analysis == "pairwise" or args.analysis == "both":
@@ -247,32 +195,19 @@ if args.analysis == "pairwise" or args.analysis == "both":
         # subset the data on the considered pair
         data_pairs = {species: data[species] for species in pair}
 
-        # PRE-COMPUTED CELL CLUSTERS
-        if args.clustering == "precomputed":
-            # use the pre-computed cell clusters
-            sam_mapping = create_samap_with_precomputed_clusters(data_pairs)
-            save_processed_sam_objects(sam_mapping, output_suffix)
-            # run the SAMAP algorithm
-            sam_mapping.run(pairwise = True, neigh_from_keys = speciesTrue_dict,
-                            NUMITERS = 6)
-
         # SAMAP CELL CLUSTERING
-        elif args.clustering == "leiden":
-            # use the SAMap clustering method, assuming a resolution parameter of three for all species
-            sam_mapping = create_samap_with_leiden_clustering(data_pairs)
-            save_processed_sam_objects(sam_mapping, output_suffix)
-            # run the SAMAP algorithm
-            sam_mapping.run(pairwise = True,
-                            neigh_from_keys = speciesTrue_dict,
-                            NUMITERS = 6)
+        # use the SAMap clustering method, assuming a resolution parameter of three for all species
+        sam_mapping = create_samap_with_leiden_clustering(data_pairs)
+        # run the SAMAP algorithm
+        sam_mapping.run(pairwise = True,
+                        neigh_from_keys = speciesTrue_dict,
+                        n_iterations = number_of_SAMap_iterarions)
 
-        # update .obs in the anndata object with full species names
-        update_sam_mapping_obs(sam_mapping)
+        if args.cluster_stitched_manifold:
+            sam_mapping.samap.leiden_clustering(res = 4)
 
         # save the computed SAMAP object
-        with open(os.path.join(output_dir, "".join(pair) + "_" + output_suffix + "_samap.pkl"), "wb") as file:
-            pickle.dump(sam_mapping, file)
-
-        sam_mapping.samap.save_anndata(os.path.join(output_dir, "".join(pair) + "_" + output_suffix + "_samap.h5ad"), "wb")
+        save_samap(sam_mapping, os.path.join(output_dir, "".join(pair) + "_" + output_suffix + "_samap.pkl"))
+        sam_mapping.samap.save_anndata(os.path.join(output_dir, "".join(pair) + "_" + output_suffix + "_samap.h5ad"))
 
         sys.stdout.flush()

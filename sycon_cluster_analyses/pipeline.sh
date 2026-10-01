@@ -57,22 +57,10 @@ Rscript scripts/06_prepare_h5ad_files.R
 #####################
 
 # run SAMap with the new pipeline that includes harmony correction of scil
-python scripts/07NEW_run_SAMap.py -s Aque,Scil,Slac -a both -i 04_preprocessed_scRNAseqs/ -d 03_pairwise_diamond/ -n 6 -o 05NEW_SAMap_porifera/
+python scripts/07_run_SAMap.py -s Aque,Scil,Slac -a both -i 04_preprocessed_scRNAseqs/ -d 03_pairwise_diamond/ -n 6 -o 05_SAMap_porifera/
 
 # run SAMap for sponges vs sponges
-bash scripts/08_run_SAMap.sh Scil,Slac,Aque both 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/Porifera_samap_both_leiden.log
-
-# run SAMap for sycon vs placozoa
-bash scripts/08_run_SAMap.sh Scil,Hhon,HH23,Tadh,TrH2 both 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/ScilPlacozoa_samap_both_leiden.log
-
-# run SAMap for spongilla vs placozoa
-bash scripts/08_run_SAMap.sh Slac,Hhon,HH23,Tadh,TrH2 both 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/SlacPlacozoa_samap_both_leiden.log
-
-# run SAMap for sycon vs mnemiopsis
-bash scripts/08_run_SAMap.sh Scil,Mlei pairwise 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/ScilMlei_samap_pairwise_leiden.log
-
-# run SAMap for sycon vs cnidaria
-bash scripts/08_run_SAMap.sh Scil,Nvec,Spis,Hvul,Xesp both 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/ScilCnidaria_samap_both_leiden.log
+# bash scripts/08_run_SAMap.sh Scil,Slac,Aque both 05b_SAMap_recodedSyconClusters | tee -a 05b_SAMap_recodedSyconClusters/Porifera_samap_both_leiden.log
 
 
 ################################
@@ -86,74 +74,22 @@ for i in 05_SAMap_porifera/*pkl; do python scripts/09_get_SAMap_mappingTables.py
 for i in 05_SAMap_porifera/*pkl; do python scripts/10_get_SAMap_genePairs.py -p $i -o 05_SAMap_porifera/02_gene_pairs -t 0.2; done
 
 
-####################################
-#     GENE EXPRESSION ANALYSIS     #
-####################################
-
-# here goes the code to check for expression of specific genes/pathways
-
-
-##################
-#     BONSAI     #
-##################
-
-# run sanity on sycon UMI counts
-# REQUIRES: conda_envs/sanity_env.yml
-for i in 08_bonsai/00_umis_metadata/*_raw_UMImatrix.tsv; do SAMPLE=$(echo $i | sed -E 's/^.+\///; s/_raw.+$//'); OUTDIR=$(echo 08_bonsai/01_sanity_extOutput/"$SAMPLE"_sanity_extOutput); mkdir $OUTDIR && ../SOFTWARES/Sanity/bin/Sanity -f $i -n 15 -e true -max_v true -d $OUTDIR; done
-
-# create bonsai config file (on spartacus)
-for i in 08_bonsai/01_sanity_extOutput/*; do FULLPATH="$(realpath $i)"; NAME="$(basename $i | awk -F "_" '{print $1}')"; DIRPATH="$(realpath $(dirname $i | awk -F "/" '{print $1}'))"; python3 ../../SOFTWARES/Bonsai-data-representation/bonsai/create_config_file.py --new_yaml_path "$DIRPATH"/"$NAME"_bonsai_config.yaml --dataset $NAME --data_folder $FULLPATH --verbose True --results_folder $DIRPATH/02_"$NAME"_results --input_is_sanity_output True; done
-
-# run bonsai (on spartacus)
-for i in 08_bonsai/S2*yaml; do FULLPATH="$(realpath $i)"; python3 ../../SOFTWARES/Bonsai-data-representation/bonsai/bonsai_main.py --config_filepath $FULLPATH; done
-
-# preprocess before visualising with bonsai-scout (on spartacus)
-python3 ../../SOFTWARES/Bonsai-data-representation/bonsai_scout/bonsai_scout_preprocess.py --results_folder /DataDrives/Drive2/Filippo/ANALYSES/sycon_bonsai/08_bonsai/02_sycon_SCT_results/ --annotation_path /DataDrives/Drive2/Filippo/ANALYSES/sycon_bonsai/00_input/sycon_metadata.tsv --take_all_genes False --config_filepath ''
-
-# run bonsai scout (on spartacus)
-python3 ../../SOFTWARES/Bonsai-data-representation/bonsai_scout/run_bonsai_scout_app.py --results_folder /DataDrives/Drive2/Filippo/ANALYSES/sycon_bonsai/08_bonsai/02_sycon_SCT_results/ --settings_filename bonsai_vis_settings.json --port 1234
-
-
 ###############################
 #     SEQUENCE ANNOTATION     #
 ###############################
 
+# annotate proteome with interproscan
 bash /lustre/alice3/data/evassvis/fn76/SOFTWARES/InterProScan/interproscan-5.75-106.0/interproscan.sh -i 01_proteomes/Scil_ol.faa -goterms -b 09_gene_annotation/scil_proteome_interproscan
 
 
-#################################
-#     PERFORM GO ENRICHMENT     #
-#################################
+#######################################
+#     GET GENES FOR GO ENRICHMENT     #
+#######################################
 
 # GO terms were annotated from the Sycon proteome with the OMA Web Server
 
 # get the list of cluster markers and the gene universe
-Rscript scripts/17_get_markers_forGOenrich.R
-
-# get GO annotation for each cluster marker and the gene universe
-for i in 10_GO_enrichment/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
-
-# perform GO enrichment for each cluster
-for i in 10_GO_enrichment/cluster*tsv; do Rscript scripts/18_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
-
-
-###########################
-#     KEGG ENRICHMENT     #
-###########################
-
-# selected organisms (eukaryotes + porifera + placo + some cnidarians): hsa, mmu, rno, dre, dme, cel, ath, sce, ago, cal, spo, ecu, pfa, cho, ehi, eco, nme, hpy, bsu, lla, mge, mtu, syn, aae, mja, ape, aqu, tad, nve, epa, adf, amil, pdam, spis, dgt, hmg
-# assigned method: BBH
-
-mkdir 11_KEGG_enrichment
-
-# get the list of cluster markers
-for i in 10_GO_enrichment/cluster*.ls; do ln -s $(realpath $i) 11_KEGG_enrichment/; done
-
-# get gene universe annotation
-grep -wf 10_GO_enrichment/geneUniverse.ls 09_gene_annotation/KOterms_kaas.tsv > 11_KEGG_enrichment/geneUniverse_KOterms.tsv
-
-# perform KO enrichment for each cluster
-for i in 11_KEGG_enrichment/cluster*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
+Rscript scripts/12_get_markers_forGOenrich.R
 
 
 ###################
@@ -162,16 +98,13 @@ for i in 11_KEGG_enrichment/cluster*ls; do Rscript scripts/19_perform_KEGGenrich
 
 mkdir -p 12_hdWGCNA/{01_RNA_assay,02_SCT_assay}
 
-Rscript scripts/20_hdWGCNA.R
+Rscript scripts/13_hdWGCNA.R
 
 # get GO annotation for each module
 for i in 12_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
 
-# perform GO enrichment for each module
-for i in 12_hdWGCNA/01_RNA_assay/*tsv; do Rscript scripts/18_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
-
 # perform KO enrichment for each module
-for i in 12_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
+# for i in 12_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
 
 
 ######################################
@@ -181,7 +114,7 @@ for i in 12_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R
 mkdir -p 13_recluster_blob/{01_onlyBlob_originalClusters,02_onlyBlob_newClusters,03_hdWGCNA}
 
 # recluster the central blob and get cluster markers
-Rscript scripts/21_recluster_blob.R
+Rscript scripts/14_recluster_blob.R
 
 # get gene universe annotation
 grep -wf 13_recluster_blob/sycon_onlyBlob_geneUniverse.ls 09_gene_annotation/GOterms_OMA.tsv > 13_recluster_blob/sycon_onlyBlob_geneUniverse_GOterms.tsv
@@ -189,15 +122,11 @@ grep -wf 13_recluster_blob/sycon_onlyBlob_geneUniverse.ls 09_gene_annotation/GOt
 # get GO annotation for each cluster marker and the gene universe
 for i in 13_recluster_blob/*/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
 
-# perform GO enrichment for each cluster
-for i in 13_recluster_blob/*/*_GOterms.tsv; do Rscript scripts/18_perform_GOenrich.R 13_recluster_blob/sycon_onlyBlob_geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
-
 # run hdWGCNA for reclusters and perform GO/KO enrich on module genes
 mkdir -p 13_recluster_blob/03_hdWGCNA/01_RNA_assay/
-Rscript scripts/22_hdWGCNA_blobOnly.R
+Rscript scripts/25_hdWGCNA_blobOnly.R
 for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
-for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*tsv; do Rscript scripts/18_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
-for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
+# for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
 
 # run SAMap on re-clustered blob
 python scripts/07_run_SAMap.py -s Scil,Aque -a pairwise -i 13_recluster_blob/04_SAMap/ -o 13_recluster_blob/04_SAMap/
@@ -223,5 +152,3 @@ for i in 15_SAMap_cnidaria/*pkl; do python scripts/09b_get_SAMap_mappingTables_l
 
 # get gene pairs
 for i in 15_SAMap_cnidaria/*pkl; do python scripts/10_get_SAMap_genePairs.py -p $i -o 15_SAMap_cnidaria/02_gene_pairs -t 0.2; done
-
-

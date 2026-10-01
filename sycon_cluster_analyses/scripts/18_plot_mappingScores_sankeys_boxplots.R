@@ -13,9 +13,9 @@ library(emmeans)
 library(glmmTMB)
 
 
-#############################
-#     THEMESS FOR PLOTS     #
-#############################
+############################
+#     THEMES FOR PLOTS     #
+############################
 
 theme_for_plots <- theme(
   # aspect.ratio = 1,
@@ -258,7 +258,7 @@ plot_boxplot <- function(mapp_score_df, significance_comparison) {
     
     coord_flip() +
     
-    labs(x = "Mapping scores", y = "Comparison") +
+    labs(x = "Comparisons", y = "SAMap mapping score") +
     
     theme_bw(base_size = 18) +
     theme_for_plots +
@@ -276,9 +276,7 @@ plot_ecdf <- function(mapp_score_df) {
     geom_line(aes(color = category_broad), linewidth = 1.2) +
     scale_color_manual(values = colors$main) +
     
-    # geom_text(x = 0.55, y = 0.9, label = "KS test, p = 0.002") +
-    
-    labs(x = "Mapping score", y = "P(score ≥ x)")  +
+    labs(y = "ECDF", x = "SAMap mapping score") +
     
     guides(color = guide_legend(keyheight = 0.8,
                                 default.unit = "cm")) +
@@ -286,7 +284,7 @@ plot_ecdf <- function(mapp_score_df) {
     theme_bw(base_size = 18) +
     theme_for_plots +
     theme(legend.position = "inside",
-          legend.position.inside = c(0.67, 0.22),
+          legend.position.inside = c(0.64, 0.22),
           legend.background = element_rect(fill = "white",
                                            colour = "black", linewidth = .4),
           legend.title = element_blank(),
@@ -505,30 +503,30 @@ panel_statistics
 
 ggsave("05NEW_SAMap_porifera/03_plots/statistics_threshold04.png",
        panel_statistics, device = "png",
-       width = 6, height = 8.7/1.1, dpi = 300, unit = "in", bg = "white")
+       width = 5.5, height = 8.7/1.1, dpi = 300, unit = "in", bg = "white")
 ggsave("05NEW_SAMap_porifera/03_plots/statistics_threshold04.pdf",
        panel_statistics, device = cairo_pdf,
-       width = 6, height = 8.7/1.1, dpi = 300, unit = "in", bg = "white")
+       width = 5.5, height = 8.7/1.1, dpi = 300, unit = "in", bg = "white")
 
 panel_statistics <- panel_statistics +
   theme(plot.margin = margin(0, 0, 0, 10, "mm"))
 
 
-######################################
-#     FINAL PANEL FOR MANUSCRIPT     #
-######################################
-
-final_panel <- ggarrange(panel_sankeys, panel_statistics,
-                         labels = "AUTO", font.label = list(size = 20),
-                         align = "hv", widths = c(1, 0.7))
-final_panel
-
-ggsave("05_SAMap_porifera/03_plots/final_panel_fig3.png",
-       final_panel, device = "png",
-       width = 14/1.1, height = 10/1.1, dpi = 300, unit = "in", bg = "white")
-ggsave("05_SAMap_porifera/03_plots/final_panel_fig3.pdf",
-       final_panel, device = cairo_pdf,
-       width = 14/1.1, height = 10/1.1, dpi = 300, unit = "in", bg = "white")
+# ######################################
+# #     FINAL PANEL FOR MANUSCRIPT     #
+# ######################################
+# 
+# final_panel <- ggarrange(panel_sankeys, panel_statistics,
+#                          labels = "AUTO", font.label = list(size = 20),
+#                          align = "hv", widths = c(1, 0.7))
+# final_panel
+# 
+# ggsave("05_SAMap_porifera/03_plots/final_panel_fig3.png",
+#        final_panel, device = "png",
+#        width = 14/1.1, height = 10/1.1, dpi = 300, unit = "in", bg = "white")
+# ggsave("05_SAMap_porifera/03_plots/final_panel_fig3.pdf",
+#        final_panel, device = cairo_pdf,
+#        width = 14/1.1, height = 10/1.1, dpi = 300, unit = "in", bg = "white")
 
 
 #################################################
@@ -608,7 +606,16 @@ heatmap_samap <- read.table("05NEW_SAMap_porifera/01_mapping_scores/AqueScilSlac
                     "Choano- to pinacocytes", "Collagen cells", "Pinacocytes 1", "Pinacocytes 2", "Sperm", "Unknown 1", "Unknown 2",
                     paste0("Archaeocytes S", seq(1, 6)), "Archaeocytes-like", "Choanocytes/-blasts", "Amoebocytes/Neuroid",
                     "Basopinacocytes", "Granulocytes-like", "Mesocytes", "Metabolocytes", "Myopeptidocytes", "Pinacocytes",
-                    "Sclerocytes", 6, 7, 8, seq(10, 13), 16, seq(18, 20), 22, seq(26, 29), 32, 33, 34, 38, 39, 40, 42))) %>%
+                    "Sclerocytes", 6, 7, 8, seq(10, 13), 16, seq(18, 20), 22, seq(26, 29), 32, 33, 34, 38, 39, 40, 42)),
+         source_cell = factor(source_cell,
+                              levels = c("1","7","11","16","23",
+                                         "21",
+                                         "30",
+                                         "25",
+                                         "17","19","24","27", "32",
+                                         "15",
+                                         "0","5","10","26",
+                                         "2","3","4","6","8","9","12","13","14","18","20","22","28","29","31"))) %>%
   
   ggplot(aes(x = source_cell, y = target_cell, fill = mapp_score)) +
   geom_tile() +

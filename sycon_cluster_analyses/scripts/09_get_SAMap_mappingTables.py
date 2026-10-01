@@ -5,9 +5,6 @@ import pandas as pd
 import sys, os, subprocess, pickle, argparse
 
 
-subprocess.run("source ~/miniforge3/bin/activate SAMap_env", shell = True)
-
-
 #####################
 #     ARGUMENTS     #
 #####################
@@ -23,6 +20,13 @@ parser.add_argument("-o", "--output_dir", required = True,
 parser.add_argument("-n", "--n_top", default = "0",
                     help = "n_top parameter to use in the get_mapping_scores function. [default = 0]")
 
+parser.add_argument("-s", "--species_metadata", required = True,
+                    help = "Tsv file with information about single-cell annotation to use; needs to have two columns named: \"speciesID\" and \"cellCluster_annotation_name\"")
+
+parser.add_argument("-l", "--use_leiden_clusters", action = "store_true",
+                    help = "Use Leiden clusters as computed by SAMap to get mapping scores. Do not invoke this flag if want to use costum cell clusters.")
+
+
 # check if the user gave no arguments, and if so then print the help
 parser.parse_args(args = None if sys.argv[1:] else ["--help"])
 
@@ -36,13 +40,14 @@ args = parser.parse_args()
 # define input file and output directory
 output_dir = args.output_dir
 input_pkl = args.input_pickle
+species_metadata = pd.read_table(args.species_metadata)
 
 # define other parameters which will be useful later on
 ID = os.path.basename(input_pkl).split("_")[0]
-output_suffix = os.path.basename(input_pkl).split("_")[1]
-
-# load the table with species metadata
-species_metadata = pd.read_table("00_input/species_metadata.tsv")
+if args.use_leiden_clusters:
+    output_suffix = os.path.basename(input_pkl).split("_")[1] + "_leiden_" + args.n_top + "topCells"
+else:
+    output_suffix = os.path.basename(input_pkl).split("_")[1] + "_costum_" + args.n_top + "topCells"
 
 # create output dir if does not exist
 if not os.path.isdir(output_dir):
@@ -59,18 +64,14 @@ with open(input_pkl, "rb") as file:
     samap_obj = pickle.load(file)
 
 # create a dictionary for the cell cluster column name
-cellCluster_dict = species_metadata.set_index("speciesID")["cellCluster_annotation_name"].to_dict()
-
-# # point to the anndata object
-# anndata = samap_obj.samap.adata
-
-# # rename a column in anndata to match the cellCluster_dict
-# anndata.obs = anndata.obs.rename(columns = {'speciesID': 'species'})
+if args.use_leiden_clusters:
+    cellCluster_dict = {k: "leiden_clusters" for k in species_metadata["speciesID"]}
+else:
+    cellCluster_dict = species_metadata.set_index("speciesID")["cellCluster_annotation_name"].to_dict()
 
 # set the mapping score matrix name
 matrix_filename = os.path.join(output_dir, ID + "_" +
-                               output_suffix + "_" +
-                               args.n_top + "topCells_samapMappingTable.tsv")
+                               output_suffix + "_samapMappingTable.tsv")
 scoringAln_filename = os.path.join(output_dir, ID + "_" +
                                    output_suffix + "_" +
                                    args.n_top + "topCells_samapScoringAln.tsv")
