@@ -2,12 +2,3 @@ speciesID	species_full	color_SAMap	cellCluster_annotation_name
 Scil	Sycon ciliatum	#f881f7	seurat_clusters
 Slac	Spongilla lacustris	#FFC107	seurat_clusters_2
 Aque	Amphimedon queenslandica	#42a4f9	cell_type
-Nvec	Nematostella vectensis	#fdbf6f	cell_type
-Spis	Stylophora pistillata	#fc9a38	cell_type
-Hvul	Hydra vulgaris	#35cf2b	cell_type
-Xesp	Xenia sp.	#9f61e1	cell_type
-Mlei	Mnemiopsis leidyi	#b15928	cell_type
-Hhon	Hoilungia hongkongensis H13	#c598dc	cell_type
-HH23	Hoilungia sp. H23	#ec4e50	cell_type
-Tadh	Trichoplax adhaerens	#8ec8e6	cell_type
-TrH2	Trichoplax sp. H2	#9ed969	cell_type
