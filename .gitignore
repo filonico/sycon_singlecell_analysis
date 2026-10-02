@@ -78,3 +78,5 @@ sycon_cluster_analyses/20_cluster_composition/*
 sycon_cluster_analyses/00_input/Scil.h5ad
 sycon_cluster_analyses/00_input/in_paralogs.tsv
 spongilla_remapping/00_input/slac_genome_BACKUP/*
+sycon_cluster_analyses/precompiled_softwares/*
+sycon_cluster_analyses/00_input/slac_genome_genename_conversion.ls
