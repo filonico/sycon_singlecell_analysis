@@ -18,7 +18,8 @@ get_markers_and_save <- function(seurat_object, group, output_dir) {
     FindAllMarkers(group.by = group, only.pos = TRUE)
   
   markers_list <- markers %>%
-    filter(avg_log2FC > 0) %>%
+    filter(avg_log2FC > 0,
+           p_val_adj < 0.05) %>%
     group_by(cluster) %>%
     # summarise(count = n())
     summarise(genes = list(gene), .groups = "drop") %>%
@@ -372,6 +373,12 @@ ggsave("13_recluster_blob/new_cluster_composition_panel.png",
 ##################################
 #     GET MARKERS PER CLUSTER    #
 ##################################
+
+# all_markers <- Sycon_blobOnly %>%
+#   FindAllMarkers(group.by = "seurat_clusters_new")
+# 
+# write.table(all_markers, "13_recluster_blob/02_onlyBlob_newClusters/all_markers_blobOnly.tsv",
+#             quote = FALSE, col.names = TRUE, row.names = FALSE, sep = "\t")
 
 markers_blobOnly_originalClusters <- get_markers_and_save(Sycon_blobOnly,
                                                           "seurat_clusters_original",

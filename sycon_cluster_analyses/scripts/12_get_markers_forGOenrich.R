@@ -37,19 +37,26 @@ get_gene_universe <- function(s.object, out_filename){
 #     GET GENES     #
 #####################
 
+# all_markers <- Sycon %>%
+#    FindAllMarkers(group.by = "seurat_clusters")
+# 
+# write.table(all_markers, "10_GO_enrichment/all_markers_whole_dataset.tsv",
+#            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = "\t")
+
 # get DE genes per cluster
 # markers_deseq2 <- Sycon %>% FindAllMarkers(test.use = "DESeq2", verbose = TRUE, assay = "RNA", slot = "counts")
 markers_wilcox <- Sycon %>% FindAllMarkers(test.use = "wilcox", verbose = TRUE)
 
 # get the list of upregulated genes per cluster
 markers_list <- markers_wilcox %>%
-  filter(avg_log2FC > 0) %>%
+  filter(avg_log2FC > 0,
+         p_val_adj < 0.05) %>%
   group_by(cluster) %>%
   # summarise(count = n())
   summarise(genes = list(gene), .groups = "drop") %>%
-  { setNames(.$genes, .$cluster) }
+  { setNames(.$genes, .$cluster) } 
 
-# write theeach list of upregulated genes per cluster to a file
+# write the list of upregulated genes per cluster to a file
 for (cluster_name in names(markers_list)) {
   file_path <- file.path("10_GO_enrichment", paste0("cluster", cluster_name, "_upregulatedGenes.ls"))
   writeLines(markers_list[[cluster_name]],
