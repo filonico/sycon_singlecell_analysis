@@ -4,3 +4,4 @@
 
 # manage linguistic stats
 *.ls linguist-language=Text
+*.ipynb linguist-detectable=false
