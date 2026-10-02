@@ -19,4 +19,4 @@ The repository contains the following:
 | [`README.md`](./README.md) | This file. |
 | [`pipeline.sh`](./pipeline.sh) | Code documentation and script execution. |
 
-Where appropriate, additional `README.md` files are available within the subderectories.
+Where relevant, additional `README.md` files are available within the subderectories.
