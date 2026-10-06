@@ -41,8 +41,8 @@ mv 02_slac_ref_genome/ 02a_cellranger_count/
 # one job per SRR run
 sbatch --job-name=cellranger \
     --cpus-per-task=20 \
-    --time=23:00:00 \
-    --mem=0 \
+    --time=12:00:00 \
+    --mem=50g \
     --export=NONE \
     --account=evassvis \
     --mail-type=BEGIN,END,FAIL \
@@ -115,8 +115,8 @@ mv 02_slac_ref_genome/ 02c_cellranger_count/
 
 sbatch --job-name=cellranger \
     --cpus-per-task=20 \
-    --time=23:00:00 \
-    --mem=0 \
+    --time=12:00:00 \
+    --mem=50g \
     --account=evassvis \
     --mail-type=BEGIN,END,FAIL \
     --mail-user=fn76@le.ac.uk \

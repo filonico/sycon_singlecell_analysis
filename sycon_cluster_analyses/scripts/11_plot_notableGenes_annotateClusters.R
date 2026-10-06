@@ -215,7 +215,7 @@ cluster_identity <- c("0" = "Uncertain_0", # uncertain identity (choanos + devel
                       "12" = "Unknown_12",
                       "13" = "Unknown_13",
                       "14" = "Unknown_14",
-                      "15" = "Metabolocyte-_and_pinacocyte-like_early_embryos",
+                      "15" = "Metabolocyte-,_pinacocyte-,_and_embryo-like",
                       "16" = "Choanocytes_16",
                       "17" = "Oocytes/early_embryos",
                       "18" = "Unknown_18",
@@ -257,16 +257,27 @@ umap_clusters <- umap_clusters_raw@data %>%
   ggplot(aes(x = UMAP_1, y = UMAP_2, colour = seurat_clusters, label = seurat_clusters)) +
   geom_point(size = 1) +
   
-  geom_label(data = . %>%
-               group_by(seurat_clusters) %>%
-               summarise(UMAP_1 = median(UMAP_1),
-                         UMAP_2 = median(UMAP_2),
-                         .groups = "drop"),
-             aes(label = seurat_clusters),
-             size = 2.5, linewidth = 0.5,
-             text.color = "black", fill = alpha("white", 0.8)) +
+  # geom_label(data = . %>%
+  #              group_by(seurat_clusters) %>%
+  #              summarise(UMAP_1 = median(UMAP_1),
+  #                        UMAP_2 = median(UMAP_2),
+  #                        .groups = "drop"),
+  #            aes(label = seurat_clusters),
+  #            size = 2.5, linewidth = 0.5,
+  #            text.color = "black", fill = alpha("white", 0.8)) +
   
-  scale_color_manual(values = SeuratExtend::color_pro("default", n = 33,
+  ggrepel::geom_text_repel(data = . %>%
+                             group_by(seurat_clusters) %>%
+                             summarise(UMAP_1 = median(UMAP_1),
+                                       UMAP_2 = median(UMAP_2),
+                                       .groups = "drop"),
+                           aes(label = seurat_clusters),
+                           size = 3, color = "black",
+                           bg.colour = "white", bg.r = 0.15,
+                           box.padding = 0.1, min.segment.length = Inf,
+                           max.overlaps = Inf) +
+  
+  scale_color_manual(values = SeuratExtend::color_pro("bright", n = 33,
                                                       sort = "diff")) + 
   
   labs(x = "UMAP 1", y = "UMAP 2",
@@ -330,7 +341,7 @@ umap_annotated <- umap_annotated_raw@data %>%
   
   labs(colour = "Main cell types") +
   
-  theme_bw(base_size = 12) +
+  theme_bw(base_size = 10) +
   theme_for_UMAPS
 umap_annotated
 
@@ -403,9 +414,10 @@ dotplot_markers_publication <- p$data %>%
          value = str_replace(value, "-like ", "-like\n"),
          value = str_replace(value, "/", "/\n"),
          value = str_replace(value, "and ", "and\n"),
+         value = str_replace(value, "cyte-, p", "cyte-,\np"),
          value = factor(value, levels = c("Choanocytes", "Myopeptidocyte-like\nchoanocytes",
                                           "Accessory cells", "Sclerocytes",
-                                          "Oocytes/\nearly embryos", "Metabolocyte- and\npinacocyte-like\nearly embryos",
+                                          "Oocytes/\nearly embryos", "Metabolocyte-,\npinacocyte-, and\nembryo-like",
                                           "Uncertain", "Unknown"))) %>%
   rename("cell_identity" = "value") %>%
   
@@ -435,7 +447,7 @@ dotplot_markers_publication <- p$data %>%
   scale_fill_manual(values = c("Accessory cells" = "#B49440",
                                "Archaeocyte-like\nstem cells" = "#B65CBF",
                                "Choanocytes" = "#67A64E",
-                               "Metabolocyte- and\npinacocyte-like\nearly embryos" = "#747CC9",
+                               "Metabolocyte-,\npinacocyte-, and\nembryo-like" = "#747CC9",
                                "Myopeptidocyte-like\nchoanocytes" = "#CA5F3E",
                                "Oocytes/\nearly embryos" = "#48B1A7",
                                "Sclerocyte-like\npinacocytes" = "#C8577B",
@@ -498,44 +510,48 @@ dotplot_markers_publication
 
 panel_umaps_noLegend <- ggpubr::ggarrange(umap_clusters,
                                           umap_annotated +
-                                            ggrepel::geom_text_repel(data = data.frame(x = -2, y = -5.5, label = "Uncertain"),
+                                            ggrepel::geom_text_repel(data = data.frame(x = -1.8, y = -5.5, label = "Uncertain"),
                                                                      aes(x = x, y = y, label = label),
                                                                      nudge_x = -0.5, nudge_y = -2, lineheight = 0.9) +
-                                            ggrepel::geom_text_repel(data = data.frame(x = 1, y = -3.4, label = "Unknown"),
+                                            ggrepel::geom_text_repel(data = data.frame(x = -3, y = 6, label = "Unknown"),
                                                                      aes(x = x, y = y, label = label),
-                                                                     nudge_x = 2.5, nudge_y = -2, lineheight = 0.9) +
-                                            ggrepel::geom_text_repel(data = data.frame(x = 7.3, y = -10.4, label = "Myopeptidocyte-like\nchoanocytes"),
+                                                                     nudge_x = 0.5, nudge_y = 3, lineheight = 0.9) +
+                                            ggrepel::geom_text_repel(data = data.frame(x = 6.6, y = -10.6, label = "Myopeptidocyte-like\nchoanocytes"),
                                                                      aes(x = x, y = y, label = label),
-                                                                     nudge_x = -1, nudge_y = 2.5, lineheight = 0.9) +
-                                            ggrepel::geom_text_repel(data = data.frame(x = 9.4, y = -3.1, label = "Metabolocyte- and\npinacocyte-like\nearly-embryos"),
+                                                                     nudge_x = -6.5, nudge_y = -0.3, lineheight = 0.9) +
+                                            ggrepel::geom_text_repel(data = data.frame(x = 9.8, y = -3.2, label = "Metabolocyte-,\npinacocyte-, and\nembryo-like"),
                                                                      aes(x = x, y = y, label = label),
-                                                                     nudge_x = -4, nudge_y = 0.2, max.overlaps = Inf, lineheight = 0.9) +
-                                            ggrepel::geom_text_repel(data = data.frame(x = 11.5, y = 0, label = "Sclerocyte-like\npinacocytes"),
+                                                                     nudge_x = -4, nudge_y = -2.8, max.overlaps = Inf, lineheight = 0.9) +
+                                            ggrepel::geom_text_repel(data = data.frame(x = 11.5, y = 0, label = "Sclerocytes"),
                                                                      aes(x = x, y = y, label = label),
-                                                                     nudge_x = -4, nudge_y = 0.1, lineheight = 0.9) +
+                                                                     nudge_x = -4, nudge_y = -0.2, lineheight = 0.9) +
                                             ggrepel::geom_text_repel(data = data.frame(x = 10.1, y = 1.9, label = "Accessory cells"),
-                                                                     aes(x = x, y = y, label = label), nudge_x = -1.8, nudge_y = 1.2) +
+                                                                     aes(x = x, y = y, label = label), nudge_x = -1.8, nudge_y = 1.2,
+                                                                     bg.colour = "white", bg.r = 0.15, box.padding = 0.1,) +
                                             # ggrepel::geom_text_repel(data = data.frame(x = 11.9, y = 5.2, label = "Archaeocyte-like\n stem cells"),
                                             #                          aes(x = x, y = y, label = label),
                                             #                          nudge_x = -4, nudge_y = 0.4, lineheight = 0.9) +
                                             ggrepel::geom_text_repel(data = data.frame(x = 9.6, y = 9.6, label = "Oocytes/early embryos"),
                                                                      aes(x = x, y = y, label = label),
-                                                                     nudge_x = -3.5, nudge_y = -2, lineheight = 0.9) +
+                                                                     nudge_x = -3.5, nudge_y = -2, lineheight = 0.9,
+                                                                     bg.colour = "white", bg.r = 0.15, box.padding = 0.1,) +
                                             ggrepel::geom_text_repel(data = data.frame(x = 0.9, y = 4.1, label = "Choanocytes"),
                                                                      aes(x = x, y = y, label = label),
                                                                      nudge_x = 2.5, nudge_y = 1.4, lineheight = 0.9) +
                                             NoLegend(), ncol = 2)
 panel_umaps_noLegend
 
-panel_fig1 <- ggpubr::ggarrange(panel_umaps_noLegend, dotplot_markers_publication,
-                                nrow = 2, labels = "AUTO", heights = c(1,2))
+panel_fig1 <- ggpubr::ggarrange(ggpubr::ggarrange(panel_umaps_noLegend, "",
+                                                  ncol = 2, widths = c(1, 0.8)),
+                                dotplot_markers_publication,
+                                nrow = 2, labels = "AUTO", heights = c(0.3,1))
 panel_fig1
 
-ggsave("07_notableGenes_clusterAnnotation/fig1_panel.pdf",
-       panel_fig1, device = cairo_pdf,
-       width = 20/1.5, height = 22/1.5, units = "in", dpi = 300, bg = "white")
-ggsave("07_notableGenes_clusterAnnotation/fig1_panel.png",
+ggsave("07_notableGenes_clusterAnnotation/fig1_panel_withCircos.png",
        panel_fig1, device = "png",
+       width = 20/1.5, height = 22/1.5, units = "in", dpi = 300, bg = "white")
+ggsave("07_notableGenes_clusterAnnotation/fig1_panel_withCircos.pdf",
+       panel_fig1, device = cairo_pdf,
        width = 20/1.5, height = 22/1.5, units = "in", dpi = 300, bg = "white")
 
 

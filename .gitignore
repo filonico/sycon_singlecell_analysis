@@ -80,3 +80,7 @@ sycon_cluster_analyses/00_input/in_paralogs.tsv
 spongilla_remapping/00_input/slac_genome_BACKUP/*
 sycon_cluster_analyses/precompiled_softwares/*
 sycon_cluster_analyses/00_input/slac_genome_genename_conversion.ls
+spongilla_remapping/02c_cellranger_count*/*
+spongilla_remapping/SRR9841059_count/*
+spongilla_remapping/mkref_02_slac_ref_genome/*
+spongilla_remapping/__*

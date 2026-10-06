@@ -2,7 +2,7 @@
 
 This folder contains all the scripts and data used for the annotation and molecular characterisation of the *S. ciliatum* single-cell dataset.
 
-> [!CAUTION]
+> [!WARNING]
 >
 > TO EDIT
 >

@@ -5,8 +5,8 @@ In this repository, you can find all the **code and scripts used to analysed the
 ## Repository content
 The repository is structured into three main folders:
 
-- [`sycon_cluster_analyses/`](.sycon_cluster_analyses/) contains all the scripts and data for the annotation and molecular characterisation of the *S. ciliatum* single-cell dataset;
-> [!CAUTION]
+- [`sycon_cluster_analyses/`](./sycon_cluster_analyses/) contains all the scripts and data for the annotation and molecular characterisation of the *S. ciliatum* single-cell dataset;
+> [!WARNING]
 >
 > POSSIBLY TO ADD
 > - [`sycon_genome_annotation/`](./sycon_genome_annotation/) contains all the scripts and data for the annotation of the *S. ciliatum* genome assembly, which has been produced by the "Darwin Tree of Life" initiative;
