@@ -86,10 +86,16 @@ bash /lustre/alice3/data/evassvis/fn76/SOFTWARES/InterProScan/interproscan-5.75-
 #     GET GENES FOR GO ENRICHMENT     #
 #######################################
 
-# GO terms were annotated from the Sycon proteome with the OMA Web Server
+# GO terms were annotated from the Sycon proteome with the EggNog mapper web server
 
 # get the list of cluster markers and the gene universe
 Rscript scripts/12_get_markers_forGOenrich.R
+
+# get GO annotation for each cluster marker and the gene universe
+for i in 10_GO_enrichment/*ls; do grep -wf $i 09_gene_annotation/GOterms_eggnog.tsv > "${i%%.*}"_GOterms.tsv; done
+
+# perform GO enrichment for each cluster
+for i in 10_GO_enrichment/cluster*tsv; do Rscript scripts/13_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
 
 
 ###################
@@ -98,7 +104,7 @@ Rscript scripts/12_get_markers_forGOenrich.R
 
 mkdir -p 12_hdWGCNA/{01_RNA_assay,02_SCT_assay}
 
-Rscript scripts/13_hdWGCNA.R
+Rscript scripts/14_hdWGCNA.R
 
 # get GO annotation for each module
 for i in 12_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
@@ -114,7 +120,7 @@ for i in 12_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_
 mkdir -p 13_recluster_blob/{01_onlyBlob_originalClusters,02_onlyBlob_newClusters,03_hdWGCNA}
 
 # recluster the central blob and get cluster markers
-Rscript scripts/14_recluster_blob.R
+Rscript scripts/15_recluster_blob.R
 
 # get gene universe annotation
 grep -wf 13_recluster_blob/sycon_onlyBlob_geneUniverse.ls 09_gene_annotation/GOterms_OMA.tsv > 13_recluster_blob/sycon_onlyBlob_geneUniverse_GOterms.tsv
@@ -124,7 +130,7 @@ for i in 13_recluster_blob/*/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.
 
 # run hdWGCNA for reclusters and perform GO/KO enrich on module genes
 mkdir -p 13_recluster_blob/03_hdWGCNA/01_RNA_assay/
-Rscript scripts/25_hdWGCNA_blobOnly.R
+Rscript scripts/16_hdWGCNA_blobOnly.R
 for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
 # for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
 
