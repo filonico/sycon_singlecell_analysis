@@ -73,6 +73,12 @@ for i in 05_SAMap_porifera/*pkl; do python scripts/09_get_SAMap_mappingTables.py
 # get gene pairs
 for i in 05_SAMap_porifera/*pkl; do python scripts/10_get_SAMap_genePairs.py -p $i -o 05_SAMap_porifera/02_gene_pairs -t 0.2; done
 
+# get GO terms
+for i in 05NEW_SAMap_porifera/02_gene_pairs/01_lists_for_enrichments/samap_*ls; do grep -wf $i 09_gene_annotation/GOterms_eggnog.tsv > "${i%%.*}"_GOterms.tsv; done
+
+# get GO enrichments
+for i in 05NEW_SAMap_porifera/02_gene_pairs/01_lists_for_enrichments/samap*GOterms.tsv; do Rscript scripts/13_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
+
 
 ###############################
 #     SEQUENCE ANNOTATION     #
@@ -107,7 +113,10 @@ mkdir -p 12_hdWGCNA/{01_RNA_assay,02_SCT_assay}
 Rscript scripts/14_hdWGCNA.R
 
 # get GO annotation for each module
-for i in 12_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
+for i in 12_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_eggnog.tsv > "${i%%.*}"_GOterms.tsv; done
+
+# perform GO enrichment for each cluster
+for i in 12_hdWGCNA/01_RNA_assay/*tsv; do Rscript scripts/13_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
 
 # perform KO enrichment for each module
 # for i in 12_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
@@ -123,15 +132,19 @@ mkdir -p 13_recluster_blob/{01_onlyBlob_originalClusters,02_onlyBlob_newClusters
 Rscript scripts/15_recluster_blob.R
 
 # get gene universe annotation
-grep -wf 13_recluster_blob/sycon_onlyBlob_geneUniverse.ls 09_gene_annotation/GOterms_OMA.tsv > 13_recluster_blob/sycon_onlyBlob_geneUniverse_GOterms.tsv
+grep -wf 13_recluster_blob/sycon_onlyBlob_geneUniverse.ls 09_gene_annotation/GOterms_eggnog.tsv > 13_recluster_blob/sycon_onlyBlob_geneUniverse_GOterms.tsv
 
 # get GO annotation for each cluster marker and the gene universe
-for i in 13_recluster_blob/*/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
+for i in 13_recluster_blob/*/*ls; do grep -wf $i 09_gene_annotation/GOterms_eggnog.tsv > "${i%%.*}"_GOterms.tsv; done
+
+# perform GO enrichment for each cluster
+for i in 13_recluster_blob/*/*tsv; do Rscript scripts/13_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
 
 # run hdWGCNA for reclusters and perform GO/KO enrich on module genes
 mkdir -p 13_recluster_blob/03_hdWGCNA/01_RNA_assay/
 Rscript scripts/16_hdWGCNA_blobOnly.R
-for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_OMA.tsv > "${i%%.*}"_GOterms.tsv; done
+for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do grep -wf $i 09_gene_annotation/GOterms_eggnog.tsv > "${i%%.*}"_GOterms.tsv; done
+for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*tsv; do Rscript scripts/13_perform_GOenrich.R 10_GO_enrichment/geneUniverse_GOterms.tsv $i "${i%%.*}"_; done
 # for i in 13_recluster_blob/03_hdWGCNA/01_RNA_assay/*ls; do Rscript scripts/19_perform_KEGGenrich.R 11_KEGG_enrichment/geneUniverse_KOterms.tsv $i "${i%%.*}"_KOenrich.tsv && echo done_$i; done
 
 # run SAMap on re-clustered blob

@@ -54,10 +54,12 @@ blend_with_bg <- function(hex, alpha = 0.5, bg = "white") {
 cluster_color_list_blended <- blend_with_bg(cluster_color_list, alpha = 0.5, bg = "white")
 cluster_color_list_blended
 
+Sycon[[]]
+
 annotation_color <- c("Unknown" = "#d9d9d9",
                       "Choanocytes" = "#67a64e",
                       "Uncertain" = "#999999",
-                      "Metabolocyte-_and_pinacocyte-like_early_embryos" = "#747cc9",
+                      "Metabolocyte-,_pinacocyte-,_and_embryo-like" = "#747cc9",
                       "Myopeptidocyte-like_choanocytes" = "#ca603f",
                       "Oocytes/early_embryos" = "#48b1a7",
                       "Sclerocytes" = "#c8577b",
@@ -76,7 +78,7 @@ reticulate::use_condaenv("scvelo_env", required = TRUE)
 scv <- reticulate::import("scvelo")
 ad <- reticulate::import("anndata")
 
-adata <- ad$read_h5ad("18_scvelo/4_Velocity_scVelo_processed_subset.h5ad")
+adata <- ad$read_h5ad("19_scvelo/4_Velocity_scVelo_processed_subset.h5ad")
 
 # add cluster names to dataframe
 obs_df <- adata$obs %>%
@@ -108,18 +110,18 @@ scv$pl$velocity_embedding_grid(adata, basis = "X_umap", color = "seurat_clusters
                                palette = cluster_color_list_blended, alpha = 1,
                                size = 20,
                                title = "", legend_loc = 'none',
-                               save = "18_scvelo/figures/umap_trajectory_grid.png",
-                               figsize = c(3.002, 3.118),  dpi = as.integer(800))
+                               save = "19_scvelo/figures/umap_trajectory_grid.png",
+                               figsize = c(3.101*1.5, 3.520*1.5),  dpi = as.integer(800))
 
 scv$pl$velocity_embedding_stream(adata, basis = "X_umap", color = "cluster_annotation",
                                  alpha = 1,
                                  density = 3, cutoff_perc = 0,
                                  arrow_color = "#222222", arrow_size = 0.5, arrow_style = "-|>",
-                                 linewidth = 0.6,
+                                 linewidth = 1,
                                  size = 20,
                                  title = "", legend_loc = 'none',
-                                 save = "18_scvelo/figures/umap_trajectory_stream.svg",
-                                 figsize = c(3.002, 3.118), dpi = as.integer(800))
+                                 save = "19_scvelo/figures/umap_trajectory_stream.png",
+                                 figsize = c(3.101*1.5, 3.520*1.5), dpi = as.integer(800))
 
 
 ################################
@@ -157,13 +159,22 @@ g$savefig("18_scvelo/figures/heatmap_dynamical_genes.png",
 #     PLOT LENGTHS AND CONFIDENCE     #
 #######################################
 
-Velocity_scVelo_processed_subset_S.object <- sceasy::convertFormat("18_scvelo/4_Velocity_scVelo_processed_subset.h5ad",
+Velocity_scVelo_processed_subset_S.object <- sceasy::convertFormat("19_scvelo/4_Velocity_scVelo_processed_subset.h5ad",
                                                                    from = "anndata", to = "seurat")
 
 boxplot_panels <- Velocity_scVelo_processed_subset_S.object[[]] %>%
   select(seurat_clusters, velocity_confidence, velocity_length) %>%
   pivot_longer(-seurat_clusters) %>%
-  mutate(name = str_replace(name, "velocity_", "Velocity ")) %>%
+  mutate(name = str_replace(name, "velocity_", "Velocity "),
+         seurat_clusters = factor(seurat_clusters, levels = c(
+           "1","7","11","16","23",
+           "21",
+           "30",
+           "25",
+           "17","19","24","27", "32",
+           "15",
+           "0","5","10","26",
+           "2","3","4","6","8","9","12","13","14","18","20","22","28","29","31"))) %>%
   group_by(name) %>%
   mutate(p_low  = quantile(value, 0.05, na.rm = TRUE),
          p_high = quantile(value, 0.95, na.rm = TRUE),
@@ -180,8 +191,8 @@ boxplot_panels <- Velocity_scVelo_processed_subset_S.object[[]] %>%
   scale_color_gradient2(high = "#cc132e", mid = "#f3f3f3", low = "#3b4dbc",
                         midpoint = 0, guide = "none") +
   
-  scale_x_discrete(breaks = seq(0, 32, 2),
-                   minor_breaks = seq(0, 32)) +
+  # scale_x_discrete(breaks = seq(0, 32, 2),
+                   # minor_breaks = seq(0, 32)) +
   
   labs(x = "Cell clusters") +
   
@@ -212,9 +223,9 @@ boxplot_panels <- Velocity_scVelo_processed_subset_S.object[[]] %>%
   )
 boxplot_panels
 
-ggsave("18_scvelo/fig2_scVelo_boxplots.pdf",
+ggsave("19_scvelo/figures/fig2_scVelo_boxplots.pdf",
        boxplot_panels, device = cairo_pdf,
-       height = 2.974*2, width = 3.02*2, units = "in", dpi = 300, bg = "white")
-ggsave("18_scvelo/fig2_scVelo_boxplots.png",
+       height = 3.520*1.5, width = 4.804*1.5, units = "in", dpi = 300, bg = "transparent")
+ggsave("19_scvelo/figures/fig2_scVelo_boxplots.png",
        boxplot_panels, device = "png",
-       height = 2.974*2, width = 3.02*2, units = "in", dpi = 300, bg = "white")
+       height = 3.520*1.5, width = 4.804*1.5, units = "in", dpi = 300, bg = "transparent")

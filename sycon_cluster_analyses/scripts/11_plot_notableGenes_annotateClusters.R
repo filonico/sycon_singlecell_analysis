@@ -255,7 +255,7 @@ umap_clusters <- umap_clusters_raw@data %>%
   mutate(seurat_clusters = fct_rev(seurat_clusters)) %>%
   
   ggplot(aes(x = UMAP_1, y = UMAP_2, colour = seurat_clusters, label = seurat_clusters)) +
-  geom_point(size = 1) +
+  geom_point(size = 0.8) +
   
   # geom_label(data = . %>%
   #              group_by(seurat_clusters) %>%
@@ -272,12 +272,12 @@ umap_clusters <- umap_clusters_raw@data %>%
                                        UMAP_2 = median(UMAP_2),
                                        .groups = "drop"),
                            aes(label = seurat_clusters),
-                           size = 3, color = "black",
-                           bg.colour = "white", bg.r = 0.15,
+                           size = 3.5, color = "black",
+                           bg.colour = "white", bg.r = 0.2,
                            box.padding = 0.1, min.segment.length = Inf,
                            max.overlaps = Inf) +
   
-  scale_color_manual(values = SeuratExtend::color_pro("bright", n = 33,
+  scale_color_manual(values = SeuratExtend::color_pro("light", n = 33,
                                                       sort = "diff")) + 
   
   labs(x = "UMAP 1", y = "UMAP 2",
@@ -324,13 +324,13 @@ umap_annotated <- umap_annotated_raw@data %>%
   
   geom_point(data = . %>%
                subset(grepl("Unknown", cluster_identity)),
-             aes(color = "Unknown"), size = 1) +
+             aes(color = "Unknown"), size = 0.8) +
   geom_point(data = . %>%
                subset(grepl("Uncertain", cluster_identity)),
-             aes(colour = "Uncertain"), size = 1) +
+             aes(colour = "Uncertain"), size = 0.8) +
   geom_point(data = . %>%
                subset(!grepl("Unknown|Uncertain", cluster_identity)),
-             aes(colour = as.factor(cluster_identity)), size = 1) +
+             aes(colour = as.factor(cluster_identity)), size = 0.8) +
   
   scale_color_manual(values = c(SeuratExtend::color_iwh("default", n = 7)[c(1,seq(3,7))],
                                 "grey60", "grey85")) + 
@@ -341,7 +341,7 @@ umap_annotated <- umap_annotated_raw@data %>%
   
   labs(colour = "Main cell types") +
   
-  theme_bw(base_size = 10) +
+  theme_bw(base_size = 12) +
   theme_for_UMAPS
 umap_annotated
 
@@ -367,10 +367,11 @@ notable_gene_names <- data.frame(gene_name = c("AE-like-1","βcat-A","βcat-B","
                                                "Hex","Hmx","Lrp-5/6","Msi-A","Msi-B","Msx",
                                                "Nanos","NCBT-like-1","NK-A","NK-B","Pax-B","Pl10-A","Pl10-B",
                                                "Six-A","Smad-1/5","Smad-4","Smad-Ra",
-                                               "Sox-6","Sox-7","Sox-B","Sox-C","Sox-E","Sox-F1","Sox-F2","Spiculin",
+                                               "Sox-6","Sox-7","Sox-B","Sox-C","Sox-E*","Sox-F1","Sox-F2","Spiculin*",
                                                "Tbox-A","Tbox-B","Tbox-C","Tcf-A","Tcf-B",
                                                "Tgfβ-B","Tgfβ-D","Tgfβ-F","Tgfβ-G","Tgfβ-N","Triactinin","Vasa-A","Vasa-B",
-                                               "Wnt-A","Wnt-C","Wnt-D","Wnt-F","Wnt-G","Wnt-I","Wnt-J","Wnt-L","Wnt-N","Wnt-Q","Wnt-R","Wnt-S","Wnt-T"),
+                                               "Wnt-A","Wnt-C","Wnt-D","Wnt-F","Wnt-G","Wnt-I","Wnt-J","Wnt-L","Wnt-N*","Wnt-Q","Wnt-R","Wnt-S","Wnt-T",
+                                               "Mpeg-1*", "Laminin*", "Granulin*"),
                                  gene_ID = c("g8503","g13719","g4975","g3032","g3118","g782","g11209","g8932",
                                              NA,"g949",NA,"g7460","g8356",NA,NA,"g4648","g3042","g2248","g8905",
                                              NA,"g8162","g9066","g13476","g11831","g12083","g9084","g3613","g10087",
@@ -378,7 +379,8 @@ notable_gene_names <- data.frame(gene_name = c("AE-like-1","βcat-A","βcat-B","
                                              "g11243","g9154","g11067","g5646","g5684","g1695","g11976","g8388",NA,
                                              "g7906","g9948",NA,"g10519","g9","g11378","g13016",NA,"g8564","g2075","g6992",
                                              "g9905","g3867","g9458","g7201","g13150","g4399",NA,NA,"g13140",NA,
-                                             "g13308","g6996","g13684","g7152","g11232","g1969")) %>% as_tibble()
+                                             "g13308","g6996","g13684","g7152","g11232","g1969",
+                                             "g4312", "g7679", "g11545")) %>% as_tibble()
 
 
 p <- Sycon %>% SeuratExtend::DotPlot2(features = notable_gene_names$gene_ID)
@@ -426,17 +428,16 @@ dotplot_markers_publication <- p$data %>%
               select(c(p_val_adj, cluster,gene)), by = join_by("group" == "cluster", "Var1" == "gene"),
             relationship = "many-to-many") %>%
 
-  mutate(gene_name = factor(gene_name, levels = c("Sox-E","Pl10-A","Elav","Wnt-Q","Vasa-A","Vasa-B","Smad-1/5","Sox-6","Sox-7","Sox-B","Sox-C","Sox-F1",
-                                                  "Tgfβ-B","Tgfβ-F","Tgfβ-G","Tgfβ-N","Wnt-A","Wnt-C","Wnt-D","Wnt-I","Wnt-L","Wnt-N","Wnt-R","Wnt-S",
+  mutate(gene_name = factor(gene_name, levels = c("Sox-E*","Mpeg-1*","Laminin*","Granulin*","Pl10-A","Elav","Vasa-A","Vasa-B","Smad-1/5","Sox-6","Sox-7","Sox-B","Sox-C","Sox-F1",
+                                                  "Tgfβ-B","Tgfβ-F","Tgfβ-G","Tgfβ-N","Wnt-A","Wnt-C","Wnt-D","Wnt-I","Wnt-L","Wnt-N*","Wnt-Q","Wnt-R","Wnt-S",
                                                   "Wnt-T","Eya","Smad-Ra","Msi-B","Gata","Fzd-C","Fzd-D","Dvl-A","Tcf-B","Cdx","Gli","Pax-B",
-                                                  "AE-like-1","CA-1","CA-2","NCBT-like-1","Spiculin","Triactinin","βcat-B","Tbox-C","NK-A","NK-B",
+                                                  "AE-like-1","CA-1","CA-2","NCBT-like-1","Spiculin*","Triactinin","βcat-B","Tbox-C","NK-A","NK-B",
                                                   "Nanos","Hex","Smad-4","Tbox-A","Hmx","Six-A","Bra-1","Msi-A","Lrp-5/6","Tcf-A","βcat-A","Bra-2",
                                                   "Pl10B")),
          sig = case_when(p_val_adj < 0.05 ~ "*",
                          TRUE ~ NA)
          ) %>%
-  arrange(zscore) %>%
-  
+  arrange(Var2) %>%
   
   ggplot(aes(gene_name, as_factor(Var2))) +
   
@@ -450,7 +451,7 @@ dotplot_markers_publication <- p$data %>%
                                "Metabolocyte-,\npinacocyte-, and\nembryo-like" = "#747CC9",
                                "Myopeptidocyte-like\nchoanocytes" = "#CA5F3E",
                                "Oocytes/\nearly embryos" = "#48B1A7",
-                               "Sclerocyte-like\npinacocytes" = "#C8577B",
+                               "Sclerocytes" = "#C8577B",
                                "Uncertain" = "grey60",
                                "Unknown" = NA),
                     guide = "none") +
@@ -508,6 +509,13 @@ dotplot_markers_publication <- p$data %>%
   )
 dotplot_markers_publication
 
+ggsave("07_notableGenes_clusterAnnotation/fig1_dotplot_markers_withHCR.png",
+       dotplot_markers_publication, device = "png",
+       width = 12, height = 9, units = "in", dpi = 300, bg = "transparent")
+ggsave("07_notableGenes_clusterAnnotation/fig1_dotplot_markers_withHCR.pdf",
+       dotplot_markers_publication, device = cairo_pdf,
+       width = 12, height = 9, units = "in", dpi = 300, bg = "transparent")
+
 panel_umaps_noLegend <- ggpubr::ggarrange(umap_clusters,
                                           umap_annotated +
                                             ggrepel::geom_text_repel(data = data.frame(x = -1.8, y = -5.5, label = "Uncertain"),
@@ -541,6 +549,14 @@ panel_umaps_noLegend <- ggpubr::ggarrange(umap_clusters,
                                             NoLegend(), ncol = 2)
 panel_umaps_noLegend
 
+ggsave("07_notableGenes_clusterAnnotation/fig1_panel_umaps_noLegend.png",
+       panel_umaps_noLegend, device = "png",
+       width = 12, height = 5, units = "in", dpi = 300, bg = "transparent")
+ggsave("07_notableGenes_clusterAnnotation/fig1_panel_umaps_noLegend.pdf",
+       panel_umaps_noLegend, device = cairo_pdf,
+       width = 12, height = 5, units = "in", dpi = 300, bg = "transparent")
+
+
 panel_fig1 <- ggpubr::ggarrange(ggpubr::ggarrange(panel_umaps_noLegend, "",
                                                   ncol = 2, widths = c(1, 0.8)),
                                 dotplot_markers_publication,
@@ -553,6 +569,7 @@ ggsave("07_notableGenes_clusterAnnotation/fig1_panel_withCircos.png",
 ggsave("07_notableGenes_clusterAnnotation/fig1_panel_withCircos.pdf",
        panel_fig1, device = cairo_pdf,
        width = 20/1.5, height = 22/1.5, units = "in", dpi = 300, bg = "white")
+
 
 
 #############################################
