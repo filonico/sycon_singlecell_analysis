@@ -371,7 +371,7 @@ notable_gene_names <- data.frame(gene_name = c("AE-like-1","βcat-A","βcat-B","
                                                "Tbox-A","Tbox-B","Tbox-C","Tcf-A","Tcf-B",
                                                "Tgfβ-B","Tgfβ-D","Tgfβ-F","Tgfβ-G","Tgfβ-N","Triactinin","Vasa-A","Vasa-B",
                                                "Wnt-A","Wnt-C","Wnt-D","Wnt-F","Wnt-G","Wnt-I","Wnt-J","Wnt-L","Wnt-N*","Wnt-Q","Wnt-R","Wnt-S","Wnt-T",
-                                               "Mpeg-1*", "Laminin*", "Granulin*"),
+                                               "Mpeg-1*", "Laminin*", "Granulin*", "USH2A-like"),
                                  gene_ID = c("g8503","g13719","g4975","g3032","g3118","g782","g11209","g8932",
                                              NA,"g949",NA,"g7460","g8356",NA,NA,"g4648","g3042","g2248","g8905",
                                              NA,"g8162","g9066","g13476","g11831","g12083","g9084","g3613","g10087",
@@ -380,7 +380,7 @@ notable_gene_names <- data.frame(gene_name = c("AE-like-1","βcat-A","βcat-B","
                                              "g7906","g9948",NA,"g10519","g9","g11378","g13016",NA,"g8564","g2075","g6992",
                                              "g9905","g3867","g9458","g7201","g13150","g4399",NA,NA,"g13140",NA,
                                              "g13308","g6996","g13684","g7152","g11232","g1969",
-                                             "g4312", "g7679", "g11545")) %>% as_tibble()
+                                             "g4312", "g7679", "g11545", "g8720")) %>% as_tibble()
 
 
 p <- Sycon %>% SeuratExtend::DotPlot2(features = notable_gene_names$gene_ID)
@@ -430,7 +430,7 @@ dotplot_markers_publication <- p$data %>%
 
   mutate(gene_name = factor(gene_name, levels = c("Sox-E*","Mpeg-1*","Laminin*","Granulin*","Pl10-A","Elav","Vasa-A","Vasa-B","Smad-1/5","Sox-6","Sox-7","Sox-B","Sox-C","Sox-F1",
                                                   "Tgfβ-B","Tgfβ-F","Tgfβ-G","Tgfβ-N","Wnt-A","Wnt-C","Wnt-D","Wnt-I","Wnt-L","Wnt-N*","Wnt-Q","Wnt-R","Wnt-S",
-                                                  "Wnt-T","Eya","Smad-Ra","Msi-B","Gata","Fzd-C","Fzd-D","Dvl-A","Tcf-B","Cdx","Gli","Pax-B",
+                                                  "Wnt-T","Eya","Smad-Ra","Msi-B","Gata","Fzd-C","Fzd-D","Dvl-A","Tcf-B","Cdx","Gli","USH2A-like","Pax-B",
                                                   "AE-like-1","CA-1","CA-2","NCBT-like-1","Spiculin*","Triactinin","βcat-B","Tbox-C","NK-A","NK-B",
                                                   "Nanos","Hex","Smad-4","Tbox-A","Hmx","Six-A","Bra-1","Msi-A","Lrp-5/6","Tcf-A","βcat-A","Bra-2",
                                                   "Pl10B")),

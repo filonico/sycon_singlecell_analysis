@@ -31,7 +31,7 @@ gene_pairs_table <- read.table("05NEW_SAMap_porifera/02_gene_pairs/AqueScilSlac_
   filter(str_starts(source_cluster, "Scil") |
            str_starts(target_cluster, "Scil")) %>%
   
-  # flag rows where Scil is currently in column 2
+  # flag rows where Scil is currently in column 2 and swap them
   mutate(swap = str_starts(target_cluster, "Scil"),
          cluster_a = if_else(swap, target_cluster, source_cluster),
          cluster_b = if_else(swap, source_cluster, target_cluster),
@@ -160,3 +160,69 @@ for (cluster_name in names(samap_gene_lists)) {
              # quote = FALSE
   )
 }
+
+
+
+
+samap <- schard::h5ad2seurat("05NEW_SAMap_porifera/ScilSlac_leiden3Clusters_samap.h5ad")
+
+identity <- read.table("07_notableGenes_clusterAnnotation/cluster_identity.tsv",
+                       sep = "\t", header = TRUE) 
+
+spongilla_identity <- c("0" = "Archaeocytes_1",
+                      "1" = "Archaeocytes_2",
+                      "2" = "Archaeocytes_3",
+                      "3" = "Archaeocytes_4",
+                      "4" = "Archaeocytes_5",
+                      "5" = "Archaeocytes_4",
+                      "6" = "Cluster_6",
+                      "7" = "Cluster_7",
+                      "8" = "Cluster_8",
+                      "9" = "Myopeptidocytes",
+                      "10" = "Cluster_10",
+                      "11" = "Cluster_11",
+                      "12" = "Cluster_12",
+                      "13" = "Cluster_13",
+                      "14" = "Metabolocytes",
+                      "15" = "Myopeptidocytes",
+                      "16" = "Cluster_16",
+                      "17" = "Pinacocytes",
+                      "18" = "Cluster_18",
+                      "19" = "Cluster_19",
+                      "20" = "Cluster_20",
+                      "21" = "Archaeocytes_6",
+                      "22" = "Cluster_22",
+                      "23" = "Archaeocytes-like",
+                      "24" = "Myopeptidocytes",
+                      "25" = "Choanocytes/-blasts",
+                      "26" = "Cluster_26",
+                      "27" = "Cluster_27",
+                      "28" = "Cluster_28",
+                      "29" = "Cluster_29",
+                      "30" = "Sclerocytes",
+                      "31" = "Amoebocytes/Neuroid",
+                      "32" = "Cluster_32",
+                      "33" = "Cluster_33",
+                      "34" = "Cluster_34",
+                      "35" = "Basopinacocytes",
+                      "36" = "Mesocytes",
+                      "37" = "Granulocytes-like",
+                      "38" = "Cluster_38",
+                      "39" = "Cluster_39",
+                      "40" = "Cluster_40",
+                      "41" = "Mesocytes",
+                      "42" = "Cluster_42") %>%
+  as_tibble() %>%
+  rownames_to_column() %>%
+  mutate(rowname = as.integer(rowname),
+         rowname = rowname - 1)
+spongilla_identity
+  
+samap[[]] %>% 
+  filter(species == "Slac") %>%
+  count(Slac_leiden_clusters, Slac_seurat_clusters) %>%
+  mutate(Slac_seurat_clusters = as.integer(Slac_seurat_clusters)) %>%
+  left_join(spongilla_identity, by = join_by("Slac_seurat_clusters" == "rowname")) %>%
+  group_by(Slac_leiden_clusters) %>%
+  slice_max(order_by = n,
+            n = 5) %>% View
