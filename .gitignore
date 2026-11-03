@@ -84,3 +84,7 @@ spongilla_remapping/02c_cellranger_count*/*
 spongilla_remapping/SRR9841059_count/*
 spongilla_remapping/mkref_02_slac_ref_genome/*
 spongilla_remapping/__*
+21_aque_plots/*
+sycon_cluster_analyses/21_aque_plots/*
+sycon_cluster_analyses/00_input/scil_calcarins.faa
+sycon_cluster_analyses/00_input/scil_calcarins.ls

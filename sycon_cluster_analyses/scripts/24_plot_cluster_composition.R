@@ -3,11 +3,17 @@
 library(Seurat)
 library(SeuratExtend)
 library(tidyverse)
+library(scDblFinder)
 
 setwd("/data/evassvis/fn76/sycon/sycon_clusterAnnotation/sycon_cluster_analyses/")
 
 # load single cell data
 load("00_input/Sycon_Seuratv4.Rdata")
+
+
+####################################
+#     PLOT CLUSTER COMPOSITION     #
+####################################
 
 DefaultAssay(Sycon) <- "RNA"
 
@@ -58,7 +64,7 @@ panel_umaps <- ggpubr::ggarrange(umap_not_integrated, umap_integrated,
 panel_umaps
 
 colpot <- Sycon[[]] %>%
-  count(seurat_clusters, orig.ident) %>%
+  dplyr::count(seurat_clusters, orig.ident) %>%
   ggplot(aes(seurat_clusters, n, fill = orig.ident)) +
   geom_col(position = "fill") +
   scale_fill_manual(values = SeuratExtend::color_pro(4, col.space = "bright")) +
@@ -66,14 +72,55 @@ colpot <- Sycon[[]] %>%
        x = "Seurat clusters", y = "Proportion of cells") +
   theme_bw()
 
-panel_final <- ggpubr::ggarrange(panel_umaps, colpot,
-                                 nrow = 2, labels = c("", "C"),
-                                 heights = c(1, 0.5))
+
+#############################
+#     DOUBLET DETECTION     #
+#############################
+
+sycon_sce <- as.SingleCellExperiment(Sycon)
+
+sycon_sce <- scDblFinder(sycon_sce, clusters = "seurat_clusters", samples = "orig.ident")
+
+VlnPlot(sycon_seu, group.by = "orig.ident", split.by = "scDblFinder.class",
+        features = c("nFeature_RNA", "nCount_RNA"), 
+        ncol = 2, pt.size = 0) + theme(legend.position = 'right')
+
+barplot_doublets <- sycon_seu[[]] %>%
+  dplyr::count(seurat_clusters, scDblFinder.class) %>%
+  ggplot(aes(x = seurat_clusters, y = n, fill = scDblFinder.class)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(values = SeuratExtend::color_pro(n = 2, col.space = "bright", sort = "diff")) +
+  labs(x = "Seurat clusters", y = "Proportion",
+       title = "Doublet rates in each cluster",
+       fill = "scDblFinder\nclassification") +
+  theme_bw(base_size = 12)
+barplot_doublets
+
+panel_final <- ggpubr::ggarrange(panel_umaps,
+                                 ggpubr::ggarrange(colpot, barplot_doublets,
+                                                   align = "hv", nrow = 2,
+                                                   labels = c("C", "D")),
+                                 nrow = 2)
 panel_final
 
 ggsave("20_cluster_composition/cluster_composition.png",
        panel_final, device = "png",
-       width = 12, height = 10, dpi = 300, units = "in", bg = "white")
+       width = 12, height = 12, dpi = 300, units = "in", bg = "white")
 ggsave("20_cluster_composition/cluster_composition.pdf",
        panel_final, device = cairo_pdf,
-       width = 12, height = 10, dpi = 300, units = "in", bg = "white")
+       width = 12, height = 12, dpi = 300, units = "in", bg = "white")
+
+doublet_per_cluster <- table(sycon_seu$seurat_clusters, sycon_seu$scDblFinder.class)
+doublet_per_cluster
+
+# chi test with simulated p-values to account for low counts
+chi <- chisq.test(doublet_per_cluster, simulate.p.value = TRUE, B = 1e5)
+chi$expected
+
+# cramer's V to test for effect size
+n <- sum(tab)
+V <- sqrt(chi$statistic / (n * (min(dim(tab)) - 1)))
+V
+
+round(chi$stdres, 2)
+

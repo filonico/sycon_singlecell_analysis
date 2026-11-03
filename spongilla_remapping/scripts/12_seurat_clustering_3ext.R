@@ -27,33 +27,82 @@ slac_3ext_remapped[[]] <- slac_3ext_remapped[[]] %>%
   mutate(sample = as_factor(sample))
 
 # plot feature statistics before filtering
-VlnPlot(slac_3ext_remapped,
-        features = c("nFeature_RNA", "nCount_RNA"))
+vln_plot_nfeature_before_filtering <- VlnPlot(slac_3ext_remapped,
+                                              features = "nFeature_RNA",
+                                              group.by = "sample")
+vln_plot_ncount_before_filtering <- VlnPlot(slac_3ext_remapped,
+                                            features = "nCount_RNA",
+                                            group.by = "sample")
+
 FeatureScatter(slac_3ext_remapped,
-               feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "sample")
+               feature1 = "nCount_RNA", feature2 = "nFeature_RNA",
+               group.by = "sample")
 
 # filter based on features and counts
 slac_3ext_remapped <- slac_3ext_remapped %>%
-  subset(subset = nFeature_RNA > 200 & nFeature_RNA < 800 &
-           nCount_RNA > 200 & nCount_RNA < 1500)
+  subset(subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
+           nCount_RNA > 200 & nCount_RNA < 10000)
 
 # plot feature statistics after filtering
-feature_vln <- slac_3ext_remapped %>%
-  VlnPlot(features = c("nFeature_RNA", "nCount_RNA"), group.by = "sample")
-feature_scatter <- slac_3ext_remapped %>%
-  FeatureScatter(feature1 = "nCount_RNA", feature2 = "nFeature_RNA", group.by = "sample")
+vln_plot_nfeature_after_filtering <- VlnPlot(slac_3ext_remapped,
+                                             features = "nFeature_RNA",
+                                             group.by = "sample")
+vln_plot_ncount_after_filtering <- VlnPlot(slac_3ext_remapped,
+                                           features = "nCount_RNA",
+                                           group.by = "sample")
 
-# create a panel
-feature_panel <- ggpubr::ggarrange(feature_vln, feature_scatter)
-feature_panel
+df_to_plot <- vln_plot_ncount_before_filtering@data %>%
+  rownames_to_column(var = "cells") %>%
+  left_join(vln_plot_nfeature_before_filtering@data %>%
+              rownames_to_column(var = "cells"),
+            by = c("cells", "ident")) %>%
+  rename("nCount_RNA_before" = "nCount_RNA",
+         "nFeature_RNA_before" = "nFeature_RNA") %>%
+  left_join(vln_plot_nfeature_after_filtering@data %>%
+              rownames_to_column(var = "cells"),
+            by = c("cells", "ident"), ) %>%
+  left_join(vln_plot_ncount_after_filtering@data %>%
+              rownames_to_column(var = "cells"),
+            by = c("cells", "ident")) %>%
+  rename("nCount_RNA_after" = "nCount_RNA",
+         "nFeature_RNA_after" = "nFeature_RNA") %>%
+  pivot_longer(-c(cells, ident)) %>%
+  mutate(name = str_replace(name, "_RNA", "RNA")) %>%
+  separate(name, into = c("category", "stage"), sep = "_") %>%
+  drop_na()
+df_to_plot
+
+thresholds <- tribble(~category, ~yint,
+                      "nCountRNA", 200,
+                      "nCountRNA", 10000,
+                      "nFeatureRNA", 200,
+                      "nFeatureRNA", 2500)
+
+violin_plots_faceted <- df_to_plot %>%
+  mutate(stage = factor(stage, levels = c("before", "after"))) %>%
+  ggplot(aes(x = ident, y = value)) +
+  geom_jitter(col = "grey80", size = 0.1, width = 0.3, height = 0.1) +
+  geom_violin(fill = alpha("white", 0)) +
+  geom_hline(data = thresholds, aes(yintercept = yint),
+             linetype = "dashed", colour = "grey20") +
+  scale_y_log10(breaks = c(0, 100, 1000, 10000)) +
+  facet_grid(category ~ stage, scales = "free_y",
+             labeller = labeller(
+               stage = c(before = "Before filtering", after = "After filtering"),
+               category = c(nCountRNA = "nCount RNA\n(min = 200, max = 10000)",
+                            nFeatureRNA = "nFeature RNA\n(min = 200, max = 2500)"))) +
+  labs(y = "Counts (log10)", x = "Libraries") +
+  theme_minimal(base_size = 12) +
+  theme(panel.border = element_rect(fill = NA))
+violin_plots_faceted
 
 # save the panel to file
 ggsave("03_slac_remapped_clustering/02_plots/feature_plot_3ext_panel.pdf",
-       feature_panel, device = cairo_pdf,
-       width = 20, height = 8, dpi = 300, units = "in", bg = "white")
-ggsave("03_slac_remapped_clustering/feature_plot_3ext_panel.png",
-       feature_panel, device = "png",
-       width = 20, height = 8, dpi = 300, units = "in", bg = "white")
+       violin_plots_faceted, device = cairo_pdf,
+       width = 9, height = 5, dpi = 300, units = "in", bg = "white")
+ggsave("03_slac_remapped_clustering/02_plots/feature_plot_3ext_panel.png",
+       violin_plots_faceted, device = "png",
+       width = 12, height = 5, dpi = 300, units = "in", bg = "white")
 
 
 ######################
@@ -72,24 +121,49 @@ slac_3ext_remapped <- slac_3ext_remapped %>%
   RunUMAP(dims = 1:30, verbose = TRUE)
 
 slac_3ext_remapped <- slac_3ext_remapped %>%
-  FindNeighbors(dims = 1:30, verbose = TRUE) %>%
-  FindClusters(verbose = TRUE, resolution = 2, cluster.name = "seurat_clusters_2") %>%
-  FindClusters(verbose = TRUE, resolution = 1, cluster.name = "seurat_clusters_1")
-  
-Idents(object = slac_3ext_remapped) <- "seurat_clusters_2"
-slac_3ext_remapped %>% saveRDS(file = "03_slac_remapped_clustering/slac_3ext_remapped_clustered.Rds")
-slac_3ext_remapped %>% saveRDS(file = "intermediate_results/01_spongilla_Sobjects_umaps/slac_3ext_remapped_clustered.Rds")
-Sycon_complete %>% saveRDS(file = "/lustre/alice3/data/evassvis/fn76/sycon/sycon_clusterAnnotation/sycon_cluster_analyses/intermediate_results/01_sycon_Sobjects_umaps/Sycon_complete.Rds.xz",
-                               compress = "xz")
+  FindNeighbors(dims = 1:30) %>%
+  FindClusters(resolution = 1)
 
+barplot_cluster_composition <- slac_3ext_remapped[[]] %>%
+  count(sample, seurat_clusters) %>%
+  ggplot(aes(x = seurat_clusters, y = n, fill = sample)) +
+  geom_col(position = "fill") +
+  labs(x = "Seurat clusters", y = "Proportion of cells", fill = "Library") +
+  scale_fill_manual(values = color_iwh(28, col.space = "default")) +
+  theme_bw()
+barplot_cluster_composition
+
+umap <- DimPlot2(slac_3ext_remapped, cols = "bright",
+                 theme = list(labs(title = expression(paste(bolditalic("Spongilla lacustris"),
+                                                            bold(" re-mapped cell atlas")))),
+                              theme_classic(), theme_umap_arrows(),
+                              theme(plot.title = element_text(hjust = 0.5))))
+umap
+
+final_panel <- ggpubr::ggarrange(violin_plots_faceted, barplot_cluster_composition, umap, 
+                                 nrow = 3, labels = "AUTO")
+final_panel
+
+ggsave("03_slac_remapped_clustering/02_plots/panel_spongilla.pdf",
+       final_panel, device = cairo_pdf,
+       height = 14, width = 12, dpi = 300, units = ("in"), bg = 'white')
+ggsave("03_slac_remapped_clustering/02_plots/panel_spongilla.png",
+       final_panel, device = "png",
+       height = 14, width = 12, dpi = 300, units = ("in"), bg = 'white')
+
+# DimPlot2(slac_3ext_remapped, features = c("seurat_clusters", "sample"))
+
+# Idents(object = slac_3ext_remapped) <- "seurat_clusters_2"
+slac_3ext_remapped %>% saveRDS(file = "03_slac_remapped_clustering/slac_3ext_remapped_clustered.Rds")
 slac_3ext_remapped <- readRDS(file = "03_slac_remapped_clustering/slac_3ext_remapped_clustered.Rds")
 
 slac_3ext_remapped_umap <- slac_3ext_remapped %>%
-  SeuratExtend::DimPlot2(pt.size = 1.5, cols = "auto",
+  SeuratExtend::DimPlot2(pt.size = 1.5, cols = "bright",
                          label = TRUE, repel = TRUE, box = TRUE, label.color = "black",
                          theme = list(labs(title = expression(paste(bolditalic("Spongilla lacustris"),
                                                                     bold(" 3'-ext re-mapped cell atlas")))),
                                       theme_classic(), theme_umap_arrows()))
+slac_3ext_remapped_umap
 
 ggsave(plot = slac_3ext_remapped_umap,
        filename = "intermediate_results/01_spongilla_Sobjects_umaps/01_plots/spongilla_cellAtlas_complete.pdf",
@@ -98,10 +172,8 @@ ggsave(plot = slac_3ext_remapped_umap,
        filename = "intermediate_results/01_spongilla_Sobjects_umaps/01_plots/spongilla_cellAtlas_complete.png",
        device = "png", dpi = 300, height = 8, width = 10, units = ("in"), bg = 'white')
 
-markers_slac_3ext <- FindAllMarkers(slac_3ext_remapped, group.by = "seurat_clusters", only.pos = TRUE)
-
-markers_slac_3ext %>%
-  filter(gene == "ENSLPGG00000010709")
+markers_slac_3ext <- FindAllMarkers(slac_3ext_remapped,
+                                    only.pos = TRUE)
 
 
 ###############################

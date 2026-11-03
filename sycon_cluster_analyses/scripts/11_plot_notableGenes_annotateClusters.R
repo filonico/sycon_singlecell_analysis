@@ -695,3 +695,162 @@ ggsave("07_notableGenes_clusterAnnotation/top5_marker_dotplot.pdf",
 ggsave("07_notableGenes_clusterAnnotation/top5_marker_dotplot.png",
        top5markers_dotplot, device = "png",
        width = 31/1.5, height = 12/1.5, units = "in", dpi = 300, bg = "white")
+
+
+##########################
+#     PLOT CALCARINS     #
+##########################
+
+calcarins_annotation <- read.table("07_notableGenes_clusterAnnotation/scil_calcarins_diamond.tsv") %>%
+  as_tibble() %>%
+  group_by(V1) %>%
+  slice_max(order_by = V3, n = 1) %>%
+  ungroup() %>%
+  select(V1, V2) %>%
+  mutate(V1 = str_remove(V1, "\\..+$")) %>%
+  rename("ncbi_ID" = "V1",
+         "present_ID" = "V2") %>%
+  left_join(read.table("00_input/scil_calcarins_annotation.tsv",
+                       sep = "\t", header = TRUE),
+            by = join_by("ncbi_ID" == "Protein_ID_.Transcriptome.")) %>%
+  drop_na() %>%
+  select(ncbi_ID, present_ID, Gene_name) %>%
+  separate(Gene_name, into = c("paralog", "paralog_no"), sep = "_", remove = FALSE) %>%
+  mutate(paralog_no = as.integer(paralog_no)) %>%
+  arrange(paralog_no) %>%
+  select(!starts_with("paralog"))
+calcarins_annotation
+
+calcarins_list <- calcarins_annotation %>%
+  # select(-ncbi_ID) %>%
+  select(Gene_name, present_ID) %>%
+  distinct() %>%
+  deframe()
+    
+calcarins_dotplot_raw <- DotPlot2(Sycon, features = calcarins_annotation$present_ID)
+
+calcarins_dotplot <- calcarins_dotplot_raw@data %>%
+  # sort y axis values to match cell types
+  mutate(Var2 = factor(Var2, levels = c(
+    "1","7","11","16","23",
+    "21",
+    "30",
+    "25",
+    "17","19","24","27", "32",
+    "15",
+    "0","5","10","26",
+    "2","3","4","6","8","9","12","13","14","18","20","22","28","29","31"
+    ))) %>%
+  
+  # remove genes with 0 expression in cells
+  filter(pct > 0) %>%
+  
+  # add gene names
+  left_join(calcarins_annotation, by = join_by("Var1" == "present_ID"),
+            relationship = "many-to-many") %>%
+  filter(!is.na(Gene_name)) %>%
+  
+  # add cell cluster names
+  left_join(cluster_identity_df, by = join_by("group" == "cluster_ID")) %>%
+  mutate(value = str_replace_all(value, "_", " "),
+         value = str_replace_all(value, " [0-9]+$", ""),
+         value = str_replace(value, "-like ", "-like\n"),
+         value = str_replace(value, "/", "/\n"),
+         value = str_replace(value, "and ", "and\n"),
+         value = str_replace(value, "cyte-, p", "cyte-,\np"),
+         value = factor(value, levels = c("Choanocytes", "Myopeptidocyte-like\nchoanocytes",
+                                          "Accessory cells", "Sclerocytes",
+                                          "Oocytes/\nearly embryos", "Metabolocyte-,\npinacocyte-, and\nembryo-like",
+                                          "Uncertain", "Unknown"))) %>%
+  rename("cell_identity" = "value") %>%
+  
+  # add p-values according to FindAllMarkers
+  left_join(sycon_allMarkers_default %>%
+              select(c(p_val_adj, cluster,gene)), by = join_by("group" == "cluster", "Var1" == "gene"),
+            relationship = "many-to-many") %>%
+  
+  mutate(Gene_name = factor(Gene_name, levels = unique(calcarins_annotation$Gene_name)),
+         sig = case_when(p_val_adj < 0.05 ~ "*",
+                         TRUE ~ NA),
+         name_to_plot = paste0(Gene_name, "\n(", Var1, ")"),
+         name_to_plot = str_replace_all(name_to_plot, "_", " "),
+         name_to_plot = factor(name_to_plot,
+                               levels = unique(name_to_plot[order(Gene_name)]))) %>%
+  arrange(Var2) %>%
+  
+  ggplot(aes(name_to_plot, as_factor(Var2))) +
+  
+  geom_rect(data = . %>% distinct(cell_identity),
+            aes(fill = cell_identity), alpha = 0.15, inherit.aes = FALSE,
+            xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+  geom_vline(xintercept = Inf, color = "#4f4f4f") +
+  scale_fill_manual(values = c("Accessory cells" = "#B49440",
+                               "Archaeocyte-like\nstem cells" = "#B65CBF",
+                               "Choanocytes" = "#67A64E",
+                               "Metabolocyte-,\npinacocyte-, and\nembryo-like" = "#747CC9",
+                               "Myopeptidocyte-like\nchoanocytes" = "#CA5F3E",
+                               "Oocytes/\nearly embryos" = "#48B1A7",
+                               "Sclerocytes" = "#C8577B",
+                               "Uncertain" = "grey60",
+                               "Unknown" = NA),
+                    guide = "none") +
+  ggnewscale::new_scale_fill() +
+  
+  geom_point(aes(size = pct, fill = zscore), shape = 21, color = "#08306B") +
+  geom_text(aes(label = sig), size = 3, color = "white", fontface = "bold", vjust = 0.65) +
+  
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  scale_color_gradient(high = "#08306B", low = "#DEEBF7") +
+  
+  scale_y_discrete(limits = rev) +
+  scale_x_discrete(position = "top") +
+  scale_size_continuous(range = c(1,7)) +
+  
+  labs(x = "Genes", y = "Cell clusters",
+       fill = "z-score", size = "Percent expressed") +
+  
+  facet_wrap(. ~ cell_identity, space = "free_y", scales = "free_y", strip.position = "right") +
+  
+  coord_cartesian(clip = "off") +
+  guides(size = guide_legend(label.position = "bottom", override.aes = list(color = "#08306B")),
+         color = guide_colorbar(barheight = 1.4)) +
+  
+  theme_bw(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "transparent", colour = NA), 
+    panel.background = element_blank(),
+    panel.border = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey90", lineend = "round", linewidth = .5),
+    legend.background = element_rect(fill = "transparent", colour = NA),
+    legend.key = element_rect(fill = "transparent", colour = NA),
+    legend.key.width = unit(.4, "cm"),
+    legend.key.height = unit(.4, "cm"),
+    legend.position = "bottom",
+    legend.title = element_text(size = 10, hjust = 0.5, face = "bold"),
+    legend.title.position = "top",
+    legend.text = element_text(size = 8),
+    axis.line = element_blank(),
+    axis.ticks = element_line(colour = "grey90", linewidth = .5),
+    axis.ticks.length = unit(0.10, "cm"),
+    axis.text.x = element_text(color = "black", angle = 45, face = "italic", hjust = 0,
+                               margin = margin(t = 4, r = 0, b = 0, l = 0)),
+    axis.text.y = element_text(color = "black",
+                               margin = margin(t = 0, r = 4, b = 0, l = 0)),
+    axis.title.y = element_text(angle = 90, size = 10, face = "bold",
+                                margin = margin(t = 0, r = 10, b = 0, l = 0)),
+    axis.title.x = element_text(angle = 0, size = 10, face = "bold",
+                                margin = margin(t = 10, r = 0, b = 0, l = 0)),
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.y = element_text(face = "bold", size = 8, angle = 0, hjust = 0),
+    strip.clip = "off",
+  )
+calcarins_dotplot
+
+ggsave("07_notableGenes_clusterAnnotation/calcarins_dotplot.png",
+       calcarins_dotplot, device = "png",
+       width = 10, height = 8, units = "in", dpi = 300, bg = "white")
+ggsave("07_notableGenes_clusterAnnotation/calcarins_dotplot.pdf",
+       calcarins_dotplot, device = cairo_pdf,
+       width = 10, height = 8, units = "in", dpi = 300, bg = "white")

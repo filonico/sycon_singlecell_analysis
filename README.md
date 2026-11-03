@@ -10,7 +10,7 @@ The repository is structured into three main folders:
 >
 > POSSIBLY TO ADD
 > - [`sycon_genome_annotation/`](./sycon_genome_annotation/) contains all the scripts and data for the annotation of the *S. ciliatum* genome assembly, which has been produced by the "Darwin Tree of Life" initiative;
-> - [`sycon_scRNAseq_preprocessing/`](./sycon_scRNAseq_preprocessing/) contains all the scripts and data for raw-read mapping and single-cell data preprocessing of *S. ciliatum*;
+> - [`sycon_scRNAseq_mapping/`](./sycon_scRNAseq_mapping/) contains scripts and data for raw-read mapping;
 
 - [`spongilla_remapping/`](./spongilla_remapping/) contains all the scripts and data for the re-analysis of the *S. lacustris* single-cell dataset, which consists of re-mapping raw reads to the newly realesed reference genome.
 
