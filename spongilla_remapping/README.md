@@ -1,6 +1,6 @@
 # Re-analysis of the *Spongilla lacustris* single-cell atlas
 
-This folder contains all the scripts and data used to re-analyse the *S. lacustris* single-cell dataset ([Musser et al., 2021](https://doi.org/10.1126/science.abj2949)) following read mapping to the genome assembly ([GCA_949361645.1](https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_949361645.1/); [Leys et al., 2025](https://doi.org/10.12688/wellcomeopenres.23988.1)).
+This folder contains all the scripts and data used to re-analyse the *S. lacustris* single-cell dataset (Musser et al., 2021; [10.1126/science.abj2949](https://doi.org/10.1126/science.abj2949)) following read mapping to the genome assembly [GCA_949361645.1](https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_949361645.1/) (Leys et al., 2025; [10.12688/wellcomeopenres.23988.1](https://doi.org/10.12688/wellcomeopenres.23988.1)).
 
 ## Repository content
 The repository contains the following:
