@@ -88,3 +88,4 @@ spongilla_remapping/__*
 sycon_cluster_analyses/21_aque_plots/*
 sycon_cluster_analyses/00_input/scil_calcarins.faa
 sycon_cluster_analyses/00_input/scil_calcarins.ls
+spongilla_remapping/intermediate_results/01_spongilla_Sobjects_umaps/slac_3ext_remapped_clustered.Rds*
